@@ -14,7 +14,12 @@ Planned entries are marked _(planned)_ until they exist.
 | `.claude/settings.json` | Pre-approved commands for Claude Code |
 | `.claude/skills/verify/` | `/verify` — run all lint, type checks, tests |
 | `.env.example` | Every env var the project uses (copy to `.env`) |
-| `apps/api/` _(planned)_ | FastAPI backend: learning engine, graders, RAG, LLM gateway |
+| `docker-compose.yml` | Local Postgres 16 + pgvector on port 54322 (`docker compose up -d`) |
+| `.github/workflows/ci.yml` | CI: ruff, mypy, pytest against a pgvector service |
+| `apps/api/` | FastAPI backend (uv, Python 3.12): `app/main.py` app factory + `/health` |
+| `apps/api/app/config.py` | Settings from repo-root `.env` (pydantic-settings) |
+| `apps/api/app/migrate.py` | Applies `supabase/migrations/*.sql` once each (`uv run python -m app.migrate`) |
+| `apps/api/tests/` | pytest; `conftest.py` makes a throwaway migrated DB per run |
 | `apps/api/app/engine/` _(planned)_ | BKT, FSRS, Elo, rule engine — pure, tested |
 | `apps/api/app/graders/` _(planned)_ | Per-subject objective graders |
 | `apps/api/app/rag/` _(planned)_ | Ingestion, chunking, embeddings, retrieval with citations |
@@ -24,4 +29,4 @@ Planned entries are marked _(planned)_ until they exist.
 | `data/items/` _(planned)_ | Quiz/code items with misconception tags and tests |
 | `apps/web/` _(planned, after demo)_ | Next.js frontend, Sena UI, Knowledge Graph view |
 | `apps/web/messages/` _(planned)_ | i18n strings (`vi` default, `en`) |
-| `supabase/migrations/` _(planned)_ | Database schema (Postgres + pgvector) |
+| `supabase/migrations/` | Database schema (Postgres + pgvector); `0001_init.sql` = schema v1 |

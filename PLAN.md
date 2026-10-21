@@ -5,7 +5,7 @@ Scope: see "Competition demo scope" in `SPEC.md`. Update status daily.
 
 | Day | Date | Work | Done when | Status |
 |---|---|---|---|---|
-| 1 | 10-22 | Scaffolding: uv, FastAPI, Supabase project, schema v1, `/verify` green | pytest passes, tables exist | todo |
+| 1 | 10-22 | Scaffolding: uv, FastAPI, Supabase project, schema v1, `/verify` green | pytest passes, tables exist | done |
 | 2 | 10-23 | Engine: BKT + `py-fsrs` wrapper, unit-tested | Mastery updates correctly on right/wrong | todo |
 | 3 | 10-24 | Ingestion: textbook → chunks → embeddings → pgvector | Each chunk keeps chapter/page | todo |
 | 4 | 10-25 | RAG + LLM gateway, cited answers, 20-question eval | Answers cite the right source | todo |
