@@ -1,7 +1,31 @@
 # PLAN — build order
 
-No deadline: each phase should be finished properly (tests, docs) before the next.
-Update the status column as work progresses.
+## Current: competition demo sprint (14 days, full-time)
+Scope: see "Competition demo scope" in `SPEC.md`. Update status daily.
+
+| Day | Date | Work | Done when | Status |
+|---|---|---|---|---|
+| 1 | 10-22 | Scaffolding: uv, FastAPI, Supabase project, schema v1, `/verify` green | pytest passes, tables exist | todo |
+| 2 | 10-23 | Engine: BKT + `py-fsrs` wrapper, unit-tested | Mastery updates correctly on right/wrong | todo |
+| 3 | 10-24 | Ingestion: textbook → chunks → embeddings → pgvector | Each chunk keeps chapter/page | todo |
+| 4 | 10-25 | RAG + LLM gateway, cited answers, 20-question eval | Answers cite the right source | todo |
+| 5–6 | 10-26–27 | KG: LLM extracts concepts/prereqs → YAML → owner review → DB | ~40 concepts, no prerequisite loops | todo |
+| 7 | 10-28 | **Buffer + checkpoint** | Days 1–6 green on `/verify` | todo |
+| 8 | 10-29 | Item bank: misconception-tagged MCQs + code items with tests; grader | ~100 items linked to concepts | todo |
+| 9 | 10-30 | Placement test + adaptive item selection | New learner gets a mastery map in ~10 min | todo |
+| 10 | 10-31 | Root-cause remediation rules | Scripted scenario remediates correctly | todo |
+| 11 | 11-01 | Socratic tutor: hint ladder, citations, no final answers | Answer-extraction tests fail to get the answer | todo |
+| 12 | 11-02 | Streamlit UI: goal → graph → quiz → tutor, Vietnamese, Sena | Full loop clickable | todo |
+| 13 | 11-03 | FSRS review cards + exam backward schedule + fixes | "Today's review" visible | todo |
+| 14 | 11-04 | E2E test, demo script, README, **backup demo video** | Demo runs 3× clean | todo |
+
+Risks / fallbacks:
+- KG extraction quality poor → hand-write the graph from the textbook table of contents (~3 h).
+- More than 1 day behind at the Day 7 checkpoint → drop Day 13 scope first.
+- Live demo failure → have the recorded video and a pre-seeded demo learner ready.
+
+## Long-term (after the demo)
+Each phase should be finished properly (tests, docs) before the next. Estimates assume ~20 h/week solo.
 
 | # | Phase | Key deliverables | Status |
 |---|---|---|---|

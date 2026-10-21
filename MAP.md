@@ -19,6 +19,9 @@ Planned entries are marked _(planned)_ until they exist.
 | `apps/api/app/graders/` _(planned)_ | Per-subject objective graders |
 | `apps/api/app/rag/` _(planned)_ | Ingestion, chunking, embeddings, retrieval with citations |
 | `apps/api/app/llm/` _(planned)_ | Provider-agnostic LLM interface |
-| `apps/web/` _(planned)_ | Next.js frontend, Sena UI, Knowledge Graph view |
+| `apps/demo/` _(planned, sprint)_ | Streamlit demo UI; talks to the API over HTTP only |
+| `data/kg/` _(planned)_ | Reviewed Knowledge Graph YAML (concepts, prerequisites) |
+| `data/items/` _(planned)_ | Quiz/code items with misconception tags and tests |
+| `apps/web/` _(planned, after demo)_ | Next.js frontend, Sena UI, Knowledge Graph view |
 | `apps/web/messages/` _(planned)_ | i18n strings (`vi` default, `en`) |
 | `supabase/migrations/` _(planned)_ | Database schema (Postgres + pgvector) |

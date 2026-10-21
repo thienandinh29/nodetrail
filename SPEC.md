@@ -32,6 +32,23 @@ Goal or syllabus upload → find trusted textbooks → build Knowledge Graph →
 - Every explanation traceable to a source chunk.
 - Learner data private by default (Supabase RLS).
 
+## Competition demo scope (sprint 2026-10-22 → 2026-11-04)
+Show the three differentiators end to end on **one subject (Python)**: Knowledge Graph, root-cause remediation,
+cited Socratic hints in Vietnamese.
+
+| In | Simplified | Out (after demo) |
+|---|---|---|
+| KG for Python (~40 concepts) | LLM-extracted, then hand-reviewed YAML | Automatic textbook search |
+| BKT mastery + root-cause remediation | One curated open-licence textbook | Lecturer/class view |
+| Adaptive quiz, misconception-tagged distractors | Placement = graph walk, not full CAT | Block-based notes editor |
+| Socratic tutor with citations (vi) | FSRS via `py-fsrs` | Auth / multi-user |
+| Code grader (test cases) | Exam schedule = simple backward plan | Elo |
+| | Streamlit UI, static Sena image + text | Sena animations, Next.js UI |
+
+Demo story: learner says "Tôi muốn học Python" → placement test → graph lights up → wrong answer on a loop
+exercise → NodeTrail traces it to a weak prerequisite (e.g. conditions/boolean logic) → Socratic hints with
+citations → mastery updates → review card scheduled.
+
 ## Non-goals (for now)
 - Gamified streaks/speed rewards.
 - Generating curriculum content without a trusted source.

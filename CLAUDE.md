@@ -11,7 +11,10 @@ Full brief: `context/product-brief.vi.md`.
 
 ## Owner & working agreement
 - Solo developer (student, aspiring ML engineer) building everything: backend, frontend, ML, infra.
-- Big long-running project, no deadline. Build things properly; don't cut corners to "ship an MVP".
+- **Current goal: competition demo in a 2-week full-time sprint** (2026-10-22 → 2026-11-04). See `PLAN.md`.
+  Scope is deliberately cut (one subject: Python, Streamlit UI, single demo user). Stay inside the sprint scope;
+  if a task grows, propose a cut instead of extending it. Long-term plan resumes after the demo.
+- Even in the sprint, keep the architecture clean (engine pure + tested, LLM behind the gateway) so nothing must be rewritten later.
 - **Reply in English.** Detailed answers with the reasoning behind decisions.
 - **Ask before** committing, pushing, adding dependencies, or making architectural changes.
 - **Run tests/lint before saying anything is done** (see `/verify` skill). Report failures honestly with output.
@@ -33,9 +36,12 @@ LLM is **not** the decision maker. It sits inside a harness:
 - Sena praises only real understanding (mastery), never speed or streaks.
 
 ## Stack (defaults chosen by Claude, owner approved "your call")
-- Monorepo: `apps/web` (Next.js App Router, TypeScript strict, Tailwind + shadcn/ui, pnpm),
-  `apps/api` (Python 3.12, FastAPI, Pydantic v2, uv), `packages/` for shared code if needed.
-- Supabase: Postgres + pgvector + Auth + Storage. Migrations in `supabase/migrations/`.
+- **Sprint (now):** `apps/api` (Python 3.12, FastAPI, Pydantic v2, uv) + `apps/demo` (Streamlit, calls the API over HTTP only).
+  Supabase cloud (free tier, pgvector); no auth, one demo user. FSRS via the `py-fsrs` library.
+- **Later:** replace `apps/demo` with `apps/web` (Next.js App Router, TypeScript strict, Tailwind + shadcn/ui, pnpm);
+  Supabase Auth + RLS; `packages/` for shared code if needed.
+- Migrations in `supabase/migrations/`.
+- Learner code execution in the sprint = subprocess with timeout, **local demo only**; needs a real sandbox before public use.
 - LLM access through one provider-agnostic interface in the API (default: Claude). Never call SDKs directly from features.
 
 ## Code conventions
