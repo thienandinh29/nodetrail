@@ -22,11 +22,12 @@ Planned entries are marked _(planned)_ until they exist.
 | `apps/api/tests/` | pytest; `conftest.py` makes a throwaway migrated DB per run |
 | `apps/api/app/engine/` | Pure, tested decision logic: `bkt.py` (mastery), `srs.py` (FSRS review scheduling); rule engine planned |
 | `apps/api/app/graders/` _(planned)_ | Per-subject objective graders |
-| `apps/api/app/rag/` _(planned)_ | Ingestion, chunking, embeddings, retrieval with citations |
+| `apps/api/app/rag/` | `notebook.py` (ipynb → chunks), `embed.py` (bge-m3, optional `embed` extra), `store.py`, `ingest.py` CLI; retrieval planned (Day 4) |
+| `data/raw/thinkpython/` | Downloaded Think Python 3e notebooks + `SOURCE_SHA` (git-ignored; re-download to rebuild) |
 | `apps/api/app/llm/` _(planned)_ | Provider-agnostic LLM interface |
 | `apps/demo/` _(planned, sprint)_ | Streamlit demo UI; talks to the API over HTTP only |
 | `data/kg/` _(planned)_ | Reviewed Knowledge Graph YAML (concepts, prerequisites) |
 | `data/items/` _(planned)_ | Quiz/code items with misconception tags and tests |
 | `apps/web/` _(planned, after demo)_ | Next.js frontend, Sena UI, Knowledge Graph view |
 | `apps/web/messages/` _(planned)_ | i18n strings (`vi` default, `en`) |
-| `supabase/migrations/` | Database schema (Postgres + pgvector); `0001_init.sql` = schema v1 |
+| `supabase/migrations/` | Database schema (Postgres + pgvector); `0001_init.sql` = schema v1, `0002` = chunk provenance (chapter, section, kind, url) |
