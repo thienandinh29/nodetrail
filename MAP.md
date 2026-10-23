@@ -20,7 +20,7 @@ Planned entries are marked _(planned)_ until they exist.
 | `apps/api/app/config.py` | Settings from repo-root `.env` (pydantic-settings) |
 | `apps/api/app/migrate.py` | Applies `supabase/migrations/*.sql` once each (`uv run python -m app.migrate`) |
 | `apps/api/tests/` | pytest; `conftest.py` makes a throwaway migrated DB per run |
-| `apps/api/app/engine/` _(planned)_ | BKT, FSRS, Elo, rule engine — pure, tested |
+| `apps/api/app/engine/` | Pure, tested decision logic: `bkt.py` (mastery), `srs.py` (FSRS review scheduling); rule engine planned |
 | `apps/api/app/graders/` _(planned)_ | Per-subject objective graders |
 | `apps/api/app/rag/` _(planned)_ | Ingestion, chunking, embeddings, retrieval with citations |
 | `apps/api/app/llm/` _(planned)_ | Provider-agnostic LLM interface |
