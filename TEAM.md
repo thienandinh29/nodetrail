@@ -4,7 +4,8 @@ Goal: the demo in `SPEC.md` ("Competition demo"): a judge names **any** topic (o
 builds a cited learning path live. No subject is prepared in advance. Every agent reads this file; follow it exactly.
 
 Before H0, ask the organizers: (1) are AI coding agents allowed, (2) may the textbook library be indexed before
-the contest, (3) may code written before the contest be reused. If (3) is "no", start a fresh repo with this same plan.
+the contest, (3) may code written before the contest be reused, (4) how long is the final-round demo (the last pitch
+was cut to 3 minutes). If (3) is "no", start a fresh repo with this same plan; (4) decides the demo script.
 
 ## Rules that make parallel work possible
 1. **Contracts first.** H0–H3 freezes data formats, API shapes and Python interfaces (below).
@@ -18,7 +19,7 @@ the contest, (3) may code written before the contest be reused. If (3) is "no", 
 
 | Person | Lane | Owns (only edits these) | Delivers |
 |---|---|---|---|
-| **P1** (lead) | Platform, infra, integration (2 agents: infra + integration) | `apps/api/app/main.py`, `app/schemas.py`, `app/api/__init__.py`, `app/config.py`, `app/db.py`, `app/jobs/`, `app/observability/`, `supabase/migrations/`, `apps/api/tests/conftest.py`, `scripts/seed.py`, `scripts/pregenerate.py`, `docker/`, `.github/`, `pyproject.toml`/`uv.lock`, `CLAUDE.md`, `TEAM.md`, `PLAN.md`, `MAP.md`, `specs/` setup | Supabase, contracts + API stubs, Redis + worker, logging/tracing/Sentry/Langfuse, Docker + Cloudflare Tunnel deploy, merges, pre-generated topics, end-to-end runs, demo script |
+| **P1** (lead) | Platform, infra, integration (2 agents: infra + integration) | `apps/api/app/main.py`, `app/schemas.py`, `app/api/__init__.py`, `app/config.py`, `app/db.py`, `app/jobs/`, `app/observability/`, `supabase/migrations/`, `apps/api/tests/conftest.py`, `scripts/seed.py`, `scripts/pregenerate.py`, `docker/`, `.github/`, `pyproject.toml`/`uv.lock`, `CLAUDE.md`, `TEAM.md`, `PLAN.md`, `MAP.md`, `specs/` setup | Supabase, contracts + API stubs, `topic_jobs` queue + worker, structlog + Langfuse, Docker + named Cloudflare Tunnel + GHCR/Watchtower deploy, merges, pre-generated topics, end-to-end runs, demo script |
 | **P2** | Sources, research, retrieval (2 agents: research + retrieval) | `app/rag/`, `app/llm/`, `app/research/`, `app/uploads/`, `data/sources/`, `scripts/build_library.*`, `tests/rag/`, `tests/research/`, `tests/uploads/`, `data/eval/` | Allowlist, library of 15–20 open textbooks (Nhanh mode), Deep Research agent, uploaded-file reader (PDF/DOCX/link), bge-m3 embeddings, cited retrieval, OpenRouter gateway with per-tier routing |
 | **P3** | Content generation | `app/content/`, `data/kg/`, `data/items/`, `tests/content/` | Pipeline for any subject: sources → Knowledge Graph → MCQs with a misconception per wrong option → answerability check; validators (no cycles, everything cited) |
 | **P4** | Learning flow + tutor | `app/engine/` (new files), `app/graders/`, `app/services/`, `app/tutor/`, `app/api/learn.py`, `app/api/tutor.py`, `tests/engine/`, `tests/graders/`, `tests/services/`, `tests/tutor/` | MCQ grading, **graph-walk placement**, next-item selection, root-cause remediation, Socratic tutor (Vietnamese, cited, no final answers), mastery + review persistence, exam plan |
@@ -26,21 +27,32 @@ the contest, (3) may code written before the contest be reused. If (3) is "no", 
 
 ## Stack (decided; changes go through P1)
 - **Web:** Next.js (App Router, TypeScript strict), Tailwind + shadcn/ui, React Flow; deployed on **Vercel**.
-- **API:** Python 3.12, FastAPI, Pydantic v2, `uv`. Runs in Docker on a **teammate's machine**, exposed with
-  **Cloudflare Tunnel**; the same image deploys to Render/Railway as fallback. CORS limited to the Vercel domain;
-  shared API key between web and API.
-- **Jobs:** Redis + `arq` worker on the same host (Deep Research runs 3–8 min, never inside a request);
-  progress to the web over Server-Sent Events.
-- **Data:** Supabase cloud — Postgres + pgvector (`halfvec`), Storage (uploads), Auth (after the demo).
+- **API:** Python 3.12, FastAPI, Pydantic v2, `uv`. Runs in Docker on a **teammate's machine**, exposed with a
+  **named Cloudflare Tunnel on the team's own domain** (never `trycloudflare.com`: its URL changes on every restart
+  and the web app would point at a dead address). The same image deploys to Render/Railway as fallback.
+  CORS: the Vercel domain and `http://localhost:3000` from H0; shared API key between web and API.
+- **Deploy:** Vercel deploys the web app on merge to `main`. For the API, GitHub Actions builds the image and pushes
+  it to GHCR; **Watchtower** on the host pulls new images automatically. Manual fallback on the host:
+  `docker compose pull && docker compose up -d`.
+- **Jobs (24 h):** a `topic_jobs` table in Postgres is the queue; a background worker runs in the same container
+  (Deep Research runs 3–8 min, never inside a request). Redis + `arq` come after the contest.
+- **Progress (SSE):** `GET /topics/{id}/events` sends a heartbeat every 15–20 s (Cloudflare drops idle connections
+  after ~100 s), with `Cache-Control: no-cache`. The web app reconnects automatically and reloads state from
+  `GET /topics/{id}` (backed by `topic_jobs`).
+- **Data:** Supabase cloud — Postgres + pgvector (`halfvec`), Storage (uploads). Auth after the contest.
 - **Embeddings:** BAAI/bge-m3 (1024 dims). Bulk indexing on a free Colab/Kaggle GPU; query embeddings on the host
   (GPU if available, ONNX int8 on CPU). Hugging Face hosted bge-m3 as backup.
 - **LLM:** OpenRouter only, through `app/llm/`. Model per (tier, task) in `app/llm/routing.yaml`:
   **free** = cheap models, Nhanh mode only, no web search; **pro** = strong models + Deep Research.
   Exact model IDs chosen after the H8 Vietnamese quality test. Avoid `:free` model variants (rate limits).
-- **Observability:** `structlog` JSON logs (`request_id`, `topic_id`, `tier`), OpenTelemetry → Grafana Cloud,
-  Sentry for errors, Langfuse for every LLM call (model, latency, cost).
+- **Observability (24 h):** `structlog` JSON logs (`request_id`, `topic_id`, `tier`) + Langfuse for every LLM call
+  (model, latency, cost); the Langfuse dashboard is shown at the end of the demo. After the contest:
+  OpenTelemetry → Grafana Cloud, Sentry.
 - **Engine:** BKT (mastery), `fsrs` (reviews), graph rules (placement, remediation). Pure functions, tested.
-- **CI:** pytest + ruff required; mypy runs but only warns. Playwright for the end-to-end flow (P5).
+- **CI:** pytest + ruff required; mypy runs but only warns. Playwright end-to-end tests after the contest;
+  during the contest P5 keeps a manual end-to-end checklist.
+- **Typed web client:** P5 generates TypeScript types from FastAPI's OpenAPI with `openapi-typescript`, so a contract
+  change breaks the web build instead of the demo.
 
 ### Host machine requirements (check before H0)
 | | Minimum | Recommended |
@@ -53,6 +65,12 @@ the contest, (3) may code written before the contest be reused. If (3) is "no", 
 | Uptime | on for 24 h + demo day | plugged in; sleep and auto-restart off |
 
 Acceptance at H3: query embedding < ~1 s per Vietnamese question on the host. Otherwise move the API to Render/Railway.
+
+### Before H0 checklist
+- Lead: Cloudflare account + a cheap domain + a named tunnel on it; Vercel account linked to the repo; Supabase demo
+  project; OpenRouter key with a spending limit; members added as GitHub collaborators.
+- Everyone: Git, Python 3.12, `uv`, their AI coding agent; own Supabase dev project and keys in `.env`.
+- P5: Node.js 20 + pnpm. Host machine: Docker, logged in to GHCR, `docker run hello-world` works.
 
 ## Contracts (frozen at H3; only P1 changes them, announced at a checkpoint)
 
@@ -90,7 +108,8 @@ Every wrong option has a `misconception`; every item has a `source`; items faili
 |---|---|---|
 | `POST /learners` | P1 | `{display_name}` → `{learner_id}` |
 | `POST /topics` | P1 (pipeline P2 + P3) | `{goal_vi?, upload_id?, mode: "quick"\|"deep", tier: "free"\|"pro"}` → `{topic_id, cached}` |
-| `GET /topics/{id}` | P1 | → `{status: queued\|researching\|indexing\|graph\|items\|ready\|failed, step_vi, progress, subject_slug?, graph_ready, items_ready, sources: [{title, publisher, url, license}], trail: [{at, kind: search\|read\|select, text_vi, url?}]}` (also streamed as SSE) |
+| `GET /topics/{id}` | P1 | → `{status: queued\|researching\|indexing\|graph\|items\|ready\|failed, step_vi, progress, subject_slug?, graph_ready, items_ready, sources: [{title, publisher, url, license}], trail: [{at, kind: search\|read\|select, text_vi, url?}]}` (current state from `topic_jobs`; used to recover after a dropped stream) |
+| `GET /topics/{id}/events` | P1 | SSE stream of the same fields as they change, plus a `heartbeat` event every 15–20 s |
 | `GET /topics/cached` | P1 | → `{topics: [{subject_slug, name_vi}]}` |
 | `POST /uploads` | P2 | multipart PDF/DOCX or `{url}` → `{upload_id, pages, text_ok}` |
 | `GET /graph?learner_id=&subject=` | P4 | → `{nodes: [{slug, name_vi, p_known, mastered}], edges: [{from, to}]}` |
@@ -134,14 +153,14 @@ objectives; everything cited; answerability-checked items.
 | Window | P1 | P2 | P3 | P4 | P5 |
 |---|---|---|---|---|---|
 | **H0–H1** | Repo, CLAUDE/TEAM, CI, FastAPI skeleton, schema on Supabase, Spec Kit setup | Allowlist + HTML reader (own folder) | Graph/item formats + validators (own folder) | BKT module (own folder) | Next.js skeleton, Sena assets |
-| **H1–H3** | Contracts + API stubs, Docker + tunnel on host, Redis | Index 2–3 textbooks on Colab; **measure bge-m3 on the host** | Generate a graph from 1 sample chapter | FSRS wrapper + tests; placement design | Wire skeleton to API stubs |
+| **H1–H3** | Contracts + API stubs, Docker + named tunnel + GHCR/Watchtower on host | Index 2–3 textbooks on Colab; **measure bge-m3 on the host** | Generate a graph from 1 sample chapter | FSRS wrapper + tests; placement design | Wire skeleton to API stubs |
 | **H3** checkpoint | Contracts frozen, foundation merged | | | | |
-| **H3–H8** | Logging/tracing/Sentry/Langfuse; job queue + SSE | Retrieval + gateway + Nhanh mode; uploads | Pipeline graph → items → check | Grading, graph-walk placement, next item | Topic input + upload, map, learning screen |
+| **H3–H8** | structlog + Langfuse; `topic_jobs` queue + worker + SSE with heartbeat | Retrieval + gateway + Nhanh mode; uploads | Pipeline graph → items → check | Grading, graph-walk placement, next item | Topic input + upload, map, learning screen |
 | **H8** checkpoint | Nhanh end to end on **3 unfamiliar topics**. Not solid → whole team on Nhanh + pre-generated topics; Deep Research becomes a bonus. Pick Free/Pro models from the Vietnamese test. | | | | |
 | **H8–H11** | Integration, dashboard | Deep Research agent, full library | Quality across subject types | Remediation + Socratic tutor | Research-trail + tutor screens, Free/Pro switch |
 | **H11–H12** | Everyone plays judge with an unfamiliar topic; measure time + cost per mode | | | | |
 | **H12** | Decide: Deep Research live on stage, or shown as a recording | | | | |
-| **H12–H18** | Pre-generate topics, demo script | Fixes, eval | Fixes per subject type | Reviews + exam plan; tutor eval ≥ 18/20 | Polish, Playwright E2E |
+| **H12–H18** | Pre-generate topics, demo script | Fixes, eval | Fixes per subject type | Reviews + exam plan; tutor eval ≥ 18/20 | Polish, manual E2E checklist |
 | **H18** freeze | Tag `demo-v1` | | | | |
 | **H18–H23** | 3 clean runs with unseen topics; pitch timed to the research | | | | **Backup video** |
 | **H23–H24** | Buffer | | | | |
@@ -171,6 +190,7 @@ explanations cited; contract shapes exact; `MAP.md` updated.
 | Risk | Fallback | Owner |
 |---|---|---|
 | Repo/contracts late past H3 | Lanes keep working in their own folders; P1 does nothing else in H0–H3 | P1 |
+| Tunnel URL changes or SSE stream drops mid-research | Named tunnel on own domain; heartbeat every 15–20 s; web reconnects and reloads `GET /topics/{id}` | P1, P5 |
 | Host machine off, asleep or offline | Sleep off, wired network, `/health` check; image ready for Render/Railway; API on the demo laptop at the venue | P1 |
 | bge-m3 too slow on the host | ONNX int8 → HF hosted → multilingual embedding API + re-index | P2 |
 | Deep Research slow, wrong or off-allowlist | 8-min cap → Nhanh → pre-generated topic; domain filter in code | P1, P2, P3 |

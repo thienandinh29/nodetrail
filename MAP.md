@@ -10,7 +10,7 @@ Planned entries are marked _(planned)_ until they exist.
 | `PLAN.md` | Phased build plan and current status |
 | `TEAM.md` | 24-hour team plan: lanes, owned paths, stack, contracts, timeline, git workflow, risks |
 | `specs/` _(planned)_ | GitHub Spec Kit: one folder per feature (spec, plan, tasks) |
-| `docker/` _(planned, P1)_ | API + worker images, compose for the host machine, tunnel config |
+| `docker/` _(planned, P1)_ | API image, compose for the host machine (API + worker, Watchtower, named Cloudflare Tunnel) |
 | `context/product-brief.vi.md` | Original product brief (Vietnamese) |
 | `context/` | Reference material: research, textbook notes, algorithm papers |
 | `outputs/` | Generated deliverables, not source code |
@@ -29,14 +29,14 @@ Planned entries are marked _(planned)_ until they exist.
 | `apps/api/app/research/` _(planned, P2)_ | Deep Research agent (allowlisted web search and reading) |
 | `apps/api/app/uploads/` _(planned, P2)_ | Uploaded PDF/DOCX/link reader |
 | `apps/api/app/content/` _(planned, P3)_ | Sources → graph → MCQs → answerability check |
-| `apps/api/app/jobs/` _(planned, P1)_ | Redis + arq worker, topic jobs, SSE progress |
-| `apps/api/app/observability/` _(planned, P1)_ | Logging, tracing, Sentry, Langfuse setup |
+| `apps/api/app/jobs/` _(planned, P1)_ | `topic_jobs` queue in Postgres, background worker, SSE progress with heartbeat |
+| `apps/api/app/observability/` _(planned, P1)_ | structlog + Langfuse setup (OpenTelemetry, Sentry after the contest) |
 | `apps/api/app/rag/` | `notebook.py` (ipynb → chunks), `embed.py` (bge-m3, optional `embed` extra), `store.py`, `ingest.py` CLI; retrieval planned (Day 4) |
 | `data/raw/thinkpython/` | Downloaded Think Python 3e notebooks + `SOURCE_SHA` (git-ignored; re-download to rebuild) |
 | `apps/api/app/llm/` _(planned, P2)_ | OpenRouter gateway + `routing.yaml` (tier × task → model) |
 | `data/sources/` _(planned, P2)_ | Allowlist of open-education sites + library manifest |
 | `data/kg/` _(planned)_ | Knowledge Graph YAML fixtures |
-| `data/items/` _(planned)_ | Quiz/code items with misconception tags and tests |
+| `data/items/` _(planned)_ | MCQ item fixtures with misconception tags |
 | `apps/web/` _(planned, P5)_ | Next.js web app on Vercel: topic input, research trail, map, learning, tutor |
 | `apps/web/messages/` _(planned)_ | i18n strings (`vi` default, `en`) |
 | `supabase/migrations/` | Database schema (Postgres + pgvector); `0001_init.sql` = schema v1, `0002` = chunk provenance (chapter, section, kind, url) |

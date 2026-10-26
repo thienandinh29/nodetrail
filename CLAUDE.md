@@ -39,13 +39,15 @@ LLM is **not** the decision maker. It sits inside a harness:
 
 ## Stack (decided — details and contracts in `TEAM.md`)
 - Web: `apps/web` — Next.js App Router, TypeScript strict, Tailwind + shadcn/ui, React Flow; Vercel.
-- API: `apps/api` — Python 3.12, FastAPI, Pydantic v2, uv; Docker on a teammate's machine via Cloudflare Tunnel.
-- Jobs: Redis + arq worker for Deep Research and topic builds (never long work inside a request).
+- API: `apps/api` — Python 3.12, FastAPI, Pydantic v2, uv; Docker on a teammate's machine via a named Cloudflare
+  Tunnel on the team's domain; images from GHCR, auto-updated on the host by Watchtower.
+- Jobs: `topic_jobs` table in Postgres as the queue + background worker in the API container (Redis after the
+  contest). Never long work inside a request; SSE progress with a heartbeat every 15–20 s.
 - Data: Supabase — Postgres + pgvector (`halfvec`), Storage. Migrations in `supabase/migrations/`.
 - Embeddings: BAAI/bge-m3 (1024 dims) behind `Embedder`.
 - LLM: **OpenRouter only**, through `app/llm/gateway.py`; model per (tier, task) in `app/llm/routing.yaml`.
   Never call an LLM SDK or HTTP API directly from features.
-- Observability: structlog JSON logs, OpenTelemetry, Sentry, Langfuse.
+- Observability: structlog JSON logs + Langfuse (OpenTelemetry and Sentry after the contest).
 
 ## Code conventions
 - Python: full type hints, `ruff` (lint + format) and `pytest` required in CI; `mypy` runs but only warns. Learning-engine math must have unit tests.
