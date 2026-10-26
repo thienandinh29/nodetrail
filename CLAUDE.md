@@ -13,9 +13,9 @@ Full brief: `context/product-brief.vi.md`.
 ## Owner & working agreement
 - Team of 5 (lead: student, aspiring ML engineer), each driving an AI coding agent. Lanes, owned paths,
   contracts and the 24-hour timeline are in `TEAM.md`; stay inside your lane's paths.
-- **Current goal: competition demo in a 2-week full-time sprint** (2026-10-22 → 2026-11-04). See `PLAN.md`.
-  Scope is deliberately cut (one subject: Python, Streamlit UI, single demo user). Stay inside the sprint scope;
-  if a task grows, propose a cut instead of extending it. Long-term plan resumes after the demo.
+- **Current goal: competition demo built in 24 hours** by the 5 lanes in `TEAM.md`: the judge names any topic or
+  uploads a file and NodeTrail builds a cited path live. Stay inside your lane and the demo scope in `SPEC.md`;
+  if a task grows, propose a cut instead of extending it.
 - Even in the sprint, keep the architecture clean (engine pure + tested, LLM behind the gateway) so nothing must be rewritten later.
 - **Reply in English.** Detailed answers with the reasoning behind decisions.
 - **Ask before** committing, pushing, adding dependencies, or making architectural changes.
@@ -31,23 +31,24 @@ Full brief: `context/product-brief.vi.md`.
 
 ## Core architecture principle
 LLM is **not** the decision maker. It sits inside a harness:
-- **Learning Engine** decides what to learn next: Bayesian Knowledge Tracing, rule engine, FSRS, Elo.
-- **Graders** score work objectively per subject: test cases, answer keys, rubrics.
+- **Learning Engine** decides what to learn next: Bayesian Knowledge Tracing, rule engine (graph-walk placement, root-cause remediation), FSRS.
+- **Graders** score work objectively: answer keys now (MCQ); test cases and rubrics later.
 - **LLM + RAG** only explains, always with citations to source textbooks. No citation → don't present it as fact.
 - Socratic tutor never hands over the final answer; it gives step-by-step hints.
 - Sena praises only real understanding (mastery), never speed or streaks.
 
-## Stack (defaults chosen by Claude, owner approved "your call")
-- **Sprint (now):** `apps/api` (Python 3.12, FastAPI, Pydantic v2, uv) + `apps/demo` (Streamlit, calls the API over HTTP only).
-  Supabase cloud (free tier, pgvector); no auth, one demo user. FSRS via the `py-fsrs` library.
-- **Later:** replace `apps/demo` with `apps/web` (Next.js App Router, TypeScript strict, Tailwind + shadcn/ui, pnpm);
-  Supabase Auth + RLS; `packages/` for shared code if needed.
-- Migrations in `supabase/migrations/`.
-- Learner code execution in the sprint = subprocess with timeout, **local demo only**; needs a real sandbox before public use.
-- LLM access through one provider-agnostic interface in the API (default: Claude). Never call SDKs directly from features.
+## Stack (decided — details and contracts in `TEAM.md`)
+- Web: `apps/web` — Next.js App Router, TypeScript strict, Tailwind + shadcn/ui, React Flow; Vercel.
+- API: `apps/api` — Python 3.12, FastAPI, Pydantic v2, uv; Docker on a teammate's machine via Cloudflare Tunnel.
+- Jobs: Redis + arq worker for Deep Research and topic builds (never long work inside a request).
+- Data: Supabase — Postgres + pgvector (`halfvec`), Storage. Migrations in `supabase/migrations/`.
+- Embeddings: BAAI/bge-m3 (1024 dims) behind `Embedder`.
+- LLM: **OpenRouter only**, through `app/llm/gateway.py`; model per (tier, task) in `app/llm/routing.yaml`.
+  Never call an LLM SDK or HTTP API directly from features.
+- Observability: structlog JSON logs, OpenTelemetry, Sentry, Langfuse.
 
 ## Code conventions
-- Python: full type hints, `ruff` (lint + format), `mypy --strict`, `pytest`. Learning-engine math must have unit tests.
+- Python: full type hints, `ruff` (lint + format) and `pytest` required in CI; `mypy` runs but only warns. Learning-engine math must have unit tests.
 - TypeScript: `strict: true`, no `any`, ESLint + Prettier, Vitest for logic.
 - Small modules, pure functions for algorithms (BKT/FSRS/Elo) so they are testable without DB or LLM.
 - Secrets only in `.env` (never commit, never paste in chat). Document every new variable in `.env.example`.
