@@ -1,33 +1,28 @@
 # PLAN — build order
 
-## Current: competition demo sprint (14 days, full-time)
-Scope: see "Competition demo scope" in `SPEC.md`. Update status daily.
+## Current: 24-hour team build
+The contest build runs as the H0–H24 plan in `TEAM.md` (5 lanes, contracts frozen at H3, scope decision at H8,
+feature freeze at H18). Milestones:
 
-> Days 4–14 are now executed as the **24-hour team plan in `TEAM.md`** (5 people in parallel).
-> The table below stays as the feature checklist; mark rows done as lanes merge.
+| Hour | Milestone |
+|---|---|
+| H3 | Repo, CI, schema, contracts + API stubs, host machine + tunnel, bge-m3 measured |
+| H8 | Nhanh mode end to end on 3 unfamiliar topics; Free/Pro models chosen |
+| H12 | Deep Research decision (live on stage or recording) |
+| H18 | Feature freeze, tag `demo-v1` |
+| H23 | 3 clean rehearsals, backup video |
 
-| Day | Date | Work | Done when | Status |
-|---|---|---|---|---|
-| 1 | 10-22 | Scaffolding: uv, FastAPI, Supabase project, schema v1, `/verify` green | pytest passes, tables exist | done |
-| 2 | 10-23 | Engine: BKT + `py-fsrs` wrapper, unit-tested | Mastery updates correctly on right/wrong | done |
-| 3 | 10-24 | Ingestion: textbook → chunks → embeddings → pgvector | Each chunk keeps chapter/page | done |
-| 4 | 10-25 | RAG + LLM gateway, cited answers, 20-question eval | Answers cite the right source | todo |
-| 5–6 | 10-26–27 | KG: LLM extracts concepts/prereqs → YAML → owner review → DB | ~40 concepts, no prerequisite loops | todo |
-| 7 | 10-28 | **Buffer + checkpoint** | Days 1–6 green on `/verify` | todo |
-| 8 | 10-29 | Item bank: misconception-tagged MCQs + code items with tests; grader | ~100 items linked to concepts | todo |
-| 9 | 10-30 | Placement test + adaptive item selection | New learner gets a mastery map in ~10 min | todo |
-| 10 | 10-31 | Root-cause remediation rules | Scripted scenario remediates correctly | todo |
-| 11 | 11-01 | Socratic tutor: hint ladder, citations, no final answers | Answer-extraction tests fail to get the answer | todo |
-| 12 | 11-02 | Streamlit UI: goal → graph → quiz → tutor, Vietnamese, Sena | Full loop clickable | todo |
-| 13 | 11-03 | FSRS review cards + exam backward schedule + fixes | "Today's review" visible | todo |
-| 14 | 11-04 | E2E test, demo script, README, **backup demo video** | Demo runs 3× clean | todo |
+Already on `main` before the contest (reuse only if the organizers allow pre-contest code): schema 0001–0002,
+BKT + FSRS engine, Think Python ingestion pipeline.
 
-Risks / fallbacks:
-- KG extraction quality poor → hand-write the graph from the textbook table of contents (~3 h).
-- More than 1 day behind at the Day 7 checkpoint → drop Day 13 scope first.
-- Live demo failure → have the recorded video and a pre-seeded demo learner ready.
+## After the contest
+| When | Goal |
+|---|---|
+| Months 1–2 | Pilot with one real class; login; move the API to an always-on host |
+| Months 3–4 | Launch Free + Pro; lecturer class view |
+| Months 5–9 | More subjects, learning-gain study, partnerships with centers and universities |
 
-## Long-term (after the demo)
+## Long-term phases (reference)
 Each phase should be finished properly (tests, docs) before the next. Estimates assume ~20 h/week solo.
 
 | # | Phase | Key deliverables | Status |
@@ -46,8 +41,12 @@ Each phase should be finished properly (tests, docs) before the next. Estimates 
 | 11 | Class view | Lecturer dashboards, class weak spots | todo |
 
 ## Decisions made
-- Pilot subject: Python. Textbook: Think Python 3e, pinned upstream commit (see `sources.version`).
-- Embeddings: BAAI/bge-m3, local, 1024 dims (cross-lingual vi ↔ en, works offline).
+- Demo: the judge's own topic or uploaded file; no pre-built subject. MCQ only.
+- Web: Next.js on Vercel. API: FastAPI in Docker on a teammate's machine via Cloudflare Tunnel (Render/Railway fallback).
+- Data: Supabase (Postgres + pgvector, Storage). Jobs: Redis + arq worker.
+- Embeddings: BAAI/bge-m3, 1024 dims (bulk on a Colab GPU; queries on the host, GPU or ONNX int8).
+- LLM: OpenRouter with per-tier routing (Free = cheap models, Pro = strong models).
+- Planning: GitHub Spec Kit per feature. CI: pytest + ruff required, mypy warn-only.
 
 ## Open decisions
 - Licensing beyond the demo: Think Python text is CC BY-NC-SA 4.0 — fine for a non-commercial demo,
