@@ -3,6 +3,9 @@
 ## Current: competition demo sprint (14 days, full-time)
 Scope: see "Competition demo scope" in `SPEC.md`. Update status daily.
 
+> Days 4–14 are now executed as the **24-hour team plan in `TEAM.md`** (5 people in parallel).
+> The table below stays as the feature checklist; mark rows done as lanes merge.
+
 | Day | Date | Work | Done when | Status |
 |---|---|---|---|---|
 | 1 | 10-22 | Scaffolding: uv, FastAPI, Supabase project, schema v1, `/verify` green | pytest passes, tables exist | done |

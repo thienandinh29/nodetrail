@@ -8,6 +8,7 @@ Planned entries are marked _(planned)_ until they exist.
 | `CLAUDE.md` | Rules and working agreement for Claude (auto-loaded) |
 | `SPEC.md` | What NodeTrail must do: features, behaviors, non-goals |
 | `PLAN.md` | Phased build plan and current status |
+| `TEAM.md` | 24-hour team plan: lanes, owned paths, contracts, timeline, git workflow |
 | `context/product-brief.vi.md` | Original product brief (Vietnamese) |
 | `context/` | Reference material: research, textbook notes, algorithm papers |
 | `outputs/` | Generated deliverables, not source code |
