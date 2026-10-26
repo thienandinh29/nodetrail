@@ -75,6 +75,9 @@ Rule: every wrong MCQ option has a `misconception`; every item has a `source` (C
 | `POST /ask` | P2 | `{question}` → `{answer_vi, citations}` |
 | `GET /reviews/due?learner_id=` | P4 | → `{cards: [{concept_slug, due_at}]}` |
 | `POST /exam-plan` | P4 | `{learner_id, exam_date}` → `{days: [{date, concept_slugs, minutes}]}` |
+| `POST /topics` | P1 (pipeline: P2 + P3) | `{goal_vi}` → `{topic_id, cached: bool}` (Act 2) |
+| `GET /topics/{id}` | P1 | → `{status: queued\|sources\|graph\|items\|ready\|failed, step_vi, progress: 0–1, subject_slug?, graph_ready, items_ready: int}` |
+| `GET /topics/cached` | P1 | → `{topics: [{subject_slug, name_vi}]}` (pre-generated list for the fallback picker) |
 
 `item` as sent to the UI never contains the answer: `{id, kind, prompt_vi, options?: [{label}], starter?}`.
 
@@ -83,6 +86,31 @@ Rule: every wrong MCQ option has a `misconception`; every item has a `source` (C
 - `app/rag/retrieve.py::search(query: str, k: int = 5) -> list[Citation]`, where `Citation` = `{chunk_id, title, section, url, content}`.
 - `app/llm/gateway.py::complete(system: str, messages: list[Message]) -> str`. Tests use a fake; nothing else imports an LLM SDK.
 - `app/engine/bkt.py`, `app/engine/srs.py` (exist): pure, no DB.
+
+## Act 2: live topic pipeline ("Thầy/cô muốn học gì?")
+A judge names any topic; NodeTrail builds a 10-concept mini-path from Wikipedia while Sena shows progress.
+Output is a normal subject (KG + items in the DB), so P4's engine and P5's quiz screens work on it unchanged.
+
+| Step | Owner | How | Time budget |
+|---|---|---|---|
+| 1. Sources | P2 | Wikipedia API, vi + en, top ~5 articles in parallel; keep title + URL for CC BY-SA attribution | ≤ 3 s |
+| 2. Index | P2 | Chunk + **HF-hosted** bge-m3 in one batch (~50 chunks); keep the model warm before the demo | ≤ 5 s |
+| 3. Graph | P3 | One LLM call → 10 concepts + prerequisite edges, structured output; validator: no cycles, every concept cites a chunk | ≤ 25 s |
+| 4. Items | P3 | **One LLM call per concept, all in parallel** (~1–2 MCQs each, misconception per wrong option, cited) | ≤ 20 s wall clock |
+| 5. Check | P3 | Parallel answerability check per item against its cited chunk; drop failures | ≤ 10 s |
+| **Total** | | Graph shown after step 3; quiz starts as soon as the first concept's items pass step 5 | **graph ≤ 35 s, first question ≤ 60 s, hard limit 90 s** |
+
+LLM rules for the pipeline (P2 owns `app/llm/`, everyone calls it):
+- Model `claude-opus-5-5` (`LLM_MODEL`) at **`effort: low`**, structured outputs (`output_config.format` / `messages.parse`), streaming for progress.
+- Parallel item calls with the async client; put the shared source text first and cache it (prompt caching), so the ten
+  parallel calls reuse one cached prefix instead of re-reading ~20k tokens each.
+- If H2 measurements miss the budget: try fast mode (`speed: "fast"`, beta, ~2.5× output speed, 2× price) or a
+  smaller model for items. **That model choice is the lead's call**, not an agent's.
+- Check the account's rate limits (requests and tokens per minute) before H10; ten parallel calls must fit.
+- Set a spending limit in the Anthropic console before rehearsals.
+
+Pre-generation: P1 runs the same pipeline the night before on 10–15 likely topics (lead picks the list).
+**Go/no-go at H12:** live run under 90 s on 3 test topics → keep live; otherwise Act 2 = pick from pre-generated topics.
 
 ## Timeline (H0 = kickoff)
 
@@ -94,6 +122,7 @@ Rule: every wrong MCQ option has a `misconception`; every item has a `source` (C
 | **H6–H10** build | Wire real routes as lanes land; e2e test skeleton | LLM gateway; hint ladder (3 levels, citations, never the final answer); `/ask` | Misconceptions + MCQs for all concepts; code items for ~15 concepts | Placement (walk the graph from roots); next-item selection | Tutor panel, Sena feedback (praise only on mastery), Vietnamese copy |
 | **H10–H12** integration 1 | Seed demo DB with real KG + items; first full click-through; log bugs per lane | Fix integration bugs | Fill gaps found in click-through | Fix integration bugs | Switch UI from stubs to real API |
 | **H12–H18** complete | Run demo story end to end every 2 h; triage | Answer-extraction tests (tutor must refuse to give answers); eval ≥ 18/20 | Validate: every option tagged, every item sourced; ~100 items | Root-cause remediation (wrong answer → weakest prerequisite); review cards + exam plan | Review screen, exam plan screen, polish; deploy to Streamlit Community Cloud |
+| **H12** Act 2 go/no-go | Decide live vs pre-generated (see Act 2) | Live pipeline timing on 3 topics | Pipeline quality on 3 topics | — | Progress screen + fallback picker |
 | **H18** freeze | Tag `demo-v1` | — | — | — | — |
 | **H18–H23** rehearse | Demo script + pitch; 3 clean runs; pre-seed a demo learner | Warm-up script for HF model | Proof-read Vietnamese text | Scripted remediation scenario test | **Record backup video**; offline fallback check |
 | **H23–H24** | Buffer | Buffer | Buffer | Buffer | Buffer |
@@ -135,6 +164,8 @@ get an owner and a deadline before the call ends.
 | Code grader hangs or is unsafe | Timeout + no network; demo runs locally only | P4 |
 | UI not ready at H18 | Demo through the scripted happy path only; backup video | P5 |
 | Venue wifi fails | Local model + local DB snapshot + backup video | P1 |
+| Act 2 live generation too slow or wrong | Pre-generated topics + 90 s timeout + "bản nháp tự động" label; H12 go/no-go | P1, P3 |
+| LLM rate limit hit by parallel calls | Lower concurrency; pre-warm cache; fall back to pre-generated topic | P2 |
 
 ## Demo story acceptance (run at every checkpoint after H10)
 1. Learner types "Tôi muốn học Python" → placement starts. *(P5, P4)*
@@ -142,3 +173,5 @@ get an owner and a deadline before the call ends.
 3. Wrong answer on a loop exercise → remediation points to a weak prerequisite (e.g. boolean expressions). *(P4, P3)*
 4. Learner asks for help → Socratic hints in Vietnamese with book citations, no final answer. *(P2)*
 5. Correct answer → mastery rises, Sena praises understanding, a review card is scheduled. *(P4, P5)*
+6. **Act 2:** a teammate plays judge with an unseen topic (e.g. "luật bóng đá") → graph ≤ 35 s, first question ≤ 60 s,
+   every question cited; past 90 s the fallback picker appears. *(P1, P2, P3, P5)*

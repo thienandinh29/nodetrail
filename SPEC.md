@@ -45,9 +45,21 @@ cited Socratic hints in Vietnamese.
 | Code grader (test cases) | Exam schedule = simple backward plan | Elo |
 | | Streamlit UI, static Sena image + text | Sena animations, Next.js UI |
 
-Demo story: learner says "Tôi muốn học Python" → placement test → graph lights up → wrong answer on a loop
-exercise → NodeTrail traces it to a weak prerequisite (e.g. conditions/boolean logic) → Socratic hints with
-citations → mastery updates → review card scheduled.
+Demo story, in two acts:
+
+**Act 1 — depth (Python, ~3 min).** Learner says "Tôi muốn học Python" → placement test → graph lights up →
+wrong answer on a loop exercise → NodeTrail traces it to a weak prerequisite (e.g. conditions/boolean logic) →
+Socratic hints with citations → mastery updates → review card scheduled.
+
+**Act 2 — breadth (the judge's topic, ~2 min).** "Thầy/cô muốn học gì?" → NodeTrail fetches Wikipedia (vi + en),
+builds a **10-concept mini-path** (graph + ~15 MCQs, every item cited) live while Sena shows progress →
+the judge answers 2–3 questions themselves.
+- Target: graph on screen in ≤ 35 s, first question in ≤ 60 s, hard limit 90 s.
+- Safety nets: 10–15 likely topics pre-generated with the same pipeline (said openly); past 90 s, offer the
+  closest pre-generated topic; output labelled "Bản nháp tự động — chưa được giáo viên duyệt".
+- MCQ only (code grading stays Python-only). Sources: Wikipedia, CC BY-SA, attributed.
+- Go/no-go at H12 (see `TEAM.md`): if the live pipeline can't meet the limit, Act 2 becomes "choose from the
+  pre-generated topics".
 
 ## Non-goals (for now)
 - Gamified streaks/speed rewards.
