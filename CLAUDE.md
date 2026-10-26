@@ -1,6 +1,7 @@
 @MAP.md
 @SPEC.md
 @PLAN.md
+@TEAM.md
 
 # NodeTrail
 
@@ -10,7 +11,8 @@ assess → learn → practice → adjust → review. Mascot: **Sena** the monkey
 Full brief: `context/product-brief.vi.md`.
 
 ## Owner & working agreement
-- Solo developer (student, aspiring ML engineer) building everything: backend, frontend, ML, infra.
+- Team of 5 (lead: student, aspiring ML engineer), each driving an AI coding agent. Lanes, owned paths,
+  contracts and the 24-hour timeline are in `TEAM.md`; stay inside your lane's paths.
 - **Current goal: competition demo in a 2-week full-time sprint** (2026-10-22 → 2026-11-04). See `PLAN.md`.
   Scope is deliberately cut (one subject: Python, Streamlit UI, single demo user). Stay inside the sprint scope;
   if a task grows, propose a cut instead of extending it. Long-term plan resumes after the demo.
