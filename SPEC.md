@@ -27,6 +27,29 @@ Goal or syllabus upload → find trusted textbooks → build Knowledge Graph →
 - Grading: subject-specific objective graders (code test cases, answer keys, rubrics).
 - LLM + RAG: explanations only, with citations.
 
+### Decision audit trail (explainability)
+Every engine decision returns a `DecisionTrace` next to its result, so NodeTrail can show *why* it concluded a
+learner is weak at concept A and not B:
+- `kind`: `bkt_update` | `placement_step` | `root_cause` | `next_item` | `review`
+- `concept_slug`, `at`
+- `prior`: P(L_{t-1}) before the evidence; `evidence`: item, correct/wrong, misconception, slip/guess used;
+  `posterior`: P(L_t) after the evidence and the learning transition
+- `rule`: which rule fired and which branch was chosen (e.g. "wrong on loops → descend to prerequisite
+  boolean-expressions, lowest p_known 0.31")
+- `alternatives`: the other candidates considered and why they lost
+
+Traces are pure data (no DB inside the engine), stored per learner, returned by the API, and rendered in Vietnamese
+in a "Vì sao?" panel. Existing functions (`bkt.update`, `srs.review`) stay as they are; traced wrappers add the trace.
+
+### Verification gate (generated content)
+A two-step pipeline for every generated question:
+1. **Generator** writes the item and cites the `chunk_id`s it is based on.
+2. **Verifier** receives **only the text of those chunks** (no other context, no answer key), tries to answer the item
+   blind, and its answer is compared with the key.
+Unanswerable or mismatched → `status = needs_review` and the item is **not served**; only `verified` items reach
+learners. Tutor hints go through the same check against their cited chunks before display. Pass/fail counts feed
+`guardrails/metrics.py`, next to the error rate measured on the human-labelled sample.
+
 ## Non-functional
 - Vietnamese-first UI and tutor language; English secondary.
 - Every explanation traceable to a source chunk.

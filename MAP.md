@@ -23,15 +23,19 @@ Planned entries are marked _(planned)_ until they exist.
 | `apps/api/app/config.py` | Settings from repo-root `.env` (pydantic-settings) |
 | `apps/api/app/migrate.py` | Applies `supabase/migrations/*.sql` once each (`uv run python -m app.migrate`) |
 | `apps/api/tests/` | pytest; `conftest.py` makes a throwaway migrated DB per run |
-| `apps/api/app/engine/` | Pure, tested decision logic: `bkt.py` (mastery), `srs.py` (FSRS review scheduling); rule engine planned |
+| `apps/api/app/engine/` | Pure, tested decision logic: `bkt.py` (mastery), `srs.py` (FSRS review scheduling) |
+| `apps/api/app/engine/graph.py` _(planned, P4)_ | Prerequisite DAG helpers + root-cause traversal to the weakest prerequisite |
+| `apps/api/app/engine/placement.py` _(planned, P4)_ | Graph-walk placement: next question, located gap |
 | `apps/api/app/graders/` _(planned, P4)_ | MCQ grading |
 | `apps/api/app/tutor/` _(planned, P4)_ | Socratic hint ladder |
 | `apps/api/app/research/` _(planned, P2)_ | Deep Research agent (allowlisted web search and reading) |
 | `apps/api/app/uploads/` _(planned, P2)_ | Uploaded PDF/DOCX/link reader |
-| `apps/api/app/content/` _(planned, P3)_ | Sources → graph → MCQs → answerability check |
+| `apps/api/app/content/` _(planned, P3)_ | Sources → Knowledge Graph → MCQs with misconception per wrong option |
+| `apps/api/app/guardrails/` _(planned, P3)_ | `answerability.py` (items and tutor hints must be supported by cited chunks), `metrics.py` (error rate on the labelled set) |
+| `data/guardrails/` _(planned, P3)_ | Human-labelled sample: ~50 generated items + ~20 tutor hints marked correct/wrong |
 | `apps/api/app/jobs/` _(planned, P1)_ | `topic_jobs` queue in Postgres, background worker, SSE progress with heartbeat |
 | `apps/api/app/observability/` _(planned, P1)_ | structlog + Langfuse setup (OpenTelemetry, Sentry after the contest) |
-| `apps/api/app/rag/` | `notebook.py` (ipynb → chunks), `embed.py` (bge-m3, optional `embed` extra), `store.py`, `ingest.py` CLI; retrieval planned (Day 4) |
+| `apps/api/app/rag/` | `notebook.py` (ipynb → chunks), `embed.py` (bge-m3, optional `embed` extra), `store.py`, `ingest.py` CLI; `retrieve.py` and optional `rerank.py` planned (P2) |
 | `data/raw/thinkpython/` | Downloaded Think Python 3e notebooks + `SOURCE_SHA` (git-ignored; re-download to rebuild) |
 | `apps/api/app/llm/` _(planned, P2)_ | LLM gateway (Vertex AI, Bedrock, OpenRouter adapters) + `routing.yaml` (tier × task → ordered provider:model list) |
 | `data/sources/` _(planned, P2)_ | Allowlist of open-education sites + library manifest |
