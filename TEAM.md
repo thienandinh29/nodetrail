@@ -67,6 +67,9 @@ was cut to 3 minutes). If (3) is "no", start a fresh repo with this same plan; (
   (model, latency, cost); the Langfuse dashboard is shown at the end of the demo. After the contest:
   OpenTelemetry → Grafana Cloud, Sentry.
 - **Engine:** BKT (mastery), `fsrs` (reviews), graph rules (placement, remediation). Pure functions, tested.
+- **Tests without Docker:** `tests/conftest.py` creates a **throwaway schema per run** (create → migrate → drop) instead
+  of a throwaway database, so every member runs the full suite against **their own free Supabase dev project**. No
+  Docker and no bge-m3 on laptops (tests use the fake embedder). CI keeps its own Postgres service. P1, H0–H3.
 - **CI:** pytest + ruff required; mypy runs but only warns. Playwright end-to-end tests after the contest;
   during the contest P5 keeps a manual end-to-end checklist.
 - **Typed web client:** P5 generates TypeScript types from FastAPI's OpenAPI with `openapi-typescript`, so a contract
@@ -93,7 +96,8 @@ the backup VM stays stopped until needed.
 - Lead: Cloudflare account + a cheap domain + a named tunnel on it; Vercel account linked to the repo; Supabase demo
   project; OpenRouter key with a spending limit (fallback only); members added as GitHub collaborators; cloud
   service-account credentials shared only through a password manager.
-- Everyone: Git, Python 3.12, `uv`, their AI coding agent; own Supabase dev project and keys in `.env`.
+- Everyone: Git, Python 3.12, `uv`, their AI coding agent; own Supabase dev project (for running tests) and keys in
+  `.env`. Laptops need no GPU and no Docker; 8 GB RAM is enough, 16 GB is comfortable; keep a few GB of disk free.
 - P5: Node.js 20 + pnpm. P1: VM setup script tested (`docker run hello-world` works on the VM).
 
 ## Contracts (frozen at H3; only P1 changes them, announced at a checkpoint)
@@ -177,7 +181,7 @@ objectives; everything cited; answerability-checked items.
 | Window | P1 | P2 | P3 | P4 | P5 |
 |---|---|---|---|---|---|
 | **H0–H1** | Repo, CLAUDE/TEAM, CI, FastAPI skeleton, schema on Supabase, Spec Kit setup | Allowlist + HTML reader (own folder) | Graph/item formats + validators (own folder) | BKT module (own folder) | Next.js skeleton, Sena assets |
-| **H1–H3** | Contracts + API stubs, primary GPU VM (Docker + named tunnel + GHCR/Watchtower), backup VM image | Index 2–3 textbooks on a temporary GPU VM; **measure bge-m3 on the API VM**; first Vertex AI call | Generate a graph from 1 sample chapter | FSRS wrapper + tests; placement design | Wire skeleton to API stubs |
+| **H1–H3** | Contracts + API stubs, primary GPU VM (Docker + named tunnel + GHCR/Watchtower), backup VM image, tests switched to a throwaway schema per run | Index 2–3 textbooks on a temporary GPU VM; **measure bge-m3 on the API VM**; first Vertex AI call | Generate a graph from 1 sample chapter | FSRS wrapper + tests; placement design | Wire skeleton to API stubs |
 | **H3** checkpoint | Contracts frozen, foundation merged | | | | |
 | **H3–H8** | structlog + Langfuse; `topic_jobs` queue + worker + SSE with heartbeat | Retrieval + gateway + Nhanh mode; uploads | Pipeline graph → items → check | Grading, graph-walk placement, next item | Topic input + upload, map, learning screen |
 | **H8** checkpoint | Nhanh end to end on **3 unfamiliar topics**. Not solid → whole team on Nhanh + pre-generated topics; Deep Research becomes a bonus. Pick Free/Pro models from the Vietnamese test. | | | | |
