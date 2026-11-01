@@ -76,7 +76,7 @@ Two modes and two tiers:
 | | **Nhanh** (NotebookLM-style) | **Nghiên cứu sâu** (Deep Research) |
 |---|---|---|
 | Sources | Curated, pre-indexed open-textbook library + learner's upload (PDF, DOCX, link) | Agent searches and reads an allowlist of reputable open-education sites |
-| Time | < 60 s | target 3–5 min, hard cap 8 min |
+| Time | < 60 s to the graph + first placement questions (rest generated in the background) | target 3–5 min, hard cap 8 min |
 | Tier / models | Free — cheap models (e.g. Gemini Flash on Vertex AI), no web search | Pro — strong models (e.g. Claude on Vertex AI/Bedrock) + web search |
 
 Deep Research quality bar: ≥ 3 sources from ≥ 2 publishers; prerequisites follow the sources' chapter order and
