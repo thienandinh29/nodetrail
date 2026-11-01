@@ -8,10 +8,12 @@ the contest, (3) may code written before the contest be reused, (4) how long is 
 was cut to 3 minutes). If (3) is "no", start a fresh repo with this same plan; (4) decides the demo script.
 
 ## Rules that make parallel work possible
-1. **Contracts first.** H0–H3 freezes data formats, API shapes and Python interfaces (below).
+1. **Contracts first.** P1 drafts data formats, API shapes and Python interfaces by **H1**; frozen at **H3**.
 2. **Stay in your lane.** Edit only the paths your lane owns. Need a change elsewhere? Ask the owner.
-3. **Fixtures and stubs until integration.** No lane waits for another.
-4. **Small PRs, CI green, P1 merges.** Nobody pushes to `main`.
+3. **Fixtures, golden topics and stubs until integration.** No lane waits for another: P4's golden topics give real
+   data from H3, P5 builds on mock JSON from H1, P2's stubs serve every route by H3.
+4. **Small PRs, CI green.** P2 merges routine PRs; contract or architecture changes need P1's approval. Nobody pushes
+   to `main`.
 5. **Spec Kit per feature:** spec → plan → tasks in `specs/<feature>/` before an agent writes code.
 6. **Feature freeze at H18.** After that, only bug fixes, rehearsal and the backup video.
 
@@ -19,63 +21,64 @@ was cut to 3 minutes). If (3) is "no", start a fresh repo with this same plan; (
 
 | Person | Lane | Owns (only edits these) | Delivers |
 |---|---|---|---|
-| **P1** (lead) | Platform, infra, integration (2 agents: infra + integration) | `apps/api/app/main.py`, `app/schemas.py`, `app/api/__init__.py`, `app/config.py`, `app/db.py`, `app/jobs/`, `app/observability/`, `supabase/migrations/`, `apps/api/tests/conftest.py`, `scripts/seed.py`, `scripts/pregenerate.py`, `docker/`, `.github/`, `pyproject.toml`/`uv.lock`, `CLAUDE.md`, `TEAM.md`, `PLAN.md`, `MAP.md`, `specs/` setup | Supabase, contracts + API stubs, `topic_jobs` queue + worker, structlog + Langfuse, Google Cloud GPU VM + AWS backup VM, Docker + named Cloudflare Tunnel + GHCR/Watchtower deploy, budget alerts, merges, pre-generated topics, end-to-end runs, demo script |
-| **P2** | Sources, research, retrieval (2 agents: research + retrieval) | `app/rag/`, `app/llm/`, `app/research/`, `app/uploads/`, `data/sources/`, `scripts/build_library.*`, `tests/rag/`, `tests/research/`, `tests/uploads/`, `data/eval/` | Allowlist, library of 8–10 open textbooks (~30k chunks, Nhanh mode), Deep Research agent, uploaded-file reader (PDF/DOCX/link), bge-m3 embeddings, cited retrieval, optional reranker `rag/rerank.py` (decided at H8), LLM gateway (Vertex AI → Bedrock → OpenRouter) with per-tier routing |
-| **P3** | Content generation + guardrails | `app/content/`, `app/guardrails/`, `data/kg/`, `data/items/`, `data/guardrails/`, `tests/content/`, `tests/guardrails/` | Pipeline for any subject: sources → Knowledge Graph → MCQs with a misconception per wrong option; validators (no cycles, everything cited); **guardrails**: `answerability.py` (items and tutor hints must be supported by their cited chunks) and `metrics.py` (error rate on a human-labelled sample, shown on the demo dashboard) |
-| **P4** | Learning flow + tutor | `app/engine/graph.py`, `app/engine/placement.py` (and other new engine files), `app/graders/`, `app/services/`, `app/tutor/`, `app/api/learn.py`, `app/api/tutor.py`, `tests/engine/`, `tests/graders/`, `tests/services/`, `tests/tutor/` | MCQ grading, **graph-walk placement**, next-item selection, root-cause remediation, Socratic tutor (Vietnamese, cited, no final answers), mastery + review persistence, exam plan |
-| **P5** | Web app | `apps/web/`, `assets/sena/` | Next.js app on Vercel: topic input + file upload, research-trail screen, knowledge map (React Flow), learning + tutor screens, **"Vì sao?" panel** rendering `DecisionTrace`, Free/Pro switch, Vietnamese i18n, **backup video** |
+| **P1** (lead, ML/AI engineer; 2 agents: retrieval + engine) | Lead + ML core | `app/schemas.py` (contracts), `app/engine/` (`bkt.py`, `srs.py`, `graph.py`, `placement.py`, `trace.py`), `app/rag/` (`embed.py`, `retrieve.py`, `rerank.py`, `notebook.py`, `store.py`, `ingest.py`), `data/eval/`, `tests/engine/`, `tests/rag/`, `CLAUDE.md`, `TEAM.md`, `SPEC.md`, `PLAN.md`, `MAP.md` | Contracts (draft H1, frozen H3); **retrieval**: bge-m3 model code, cited retrieval, optional reranker, retrieval evaluation, library indexing scripts; **learner model**: BKT/FSRS (traced), root-cause tracing, graph-walk placement, `DecisionTrace`; **evaluation design** for guardrail metrics and the H8 model test; H8/H12 decisions; the algorithm part of the pitch. **No server or Docker work.** |
+| **P2** (backend/DevOps; 2 agents: infra + services) | Platform | `apps/api/app/main.py`, `app/api/__init__.py`, `app/config.py`, `app/db.py`, `app/services/` (database layer), `app/jobs/`, `app/observability/`, `supabase/migrations/`, `apps/api/tests/conftest.py`, `scripts/seed.py`, `scripts/pregenerate.py`, `docker/`, `.github/`, `pyproject.toml`/`uv.lock`, `specs/` setup | Repo, CI, Spec Kit setup; API stubs from P1's contracts by H3; **GPU VM + AWS backup VM**, Docker, named Cloudflare Tunnel, GHCR/Watchtower deploy, budget alerts; **bge-m3 serving container + `/internal/embed`** (H0–H2) and the temporary indexing GPU VM; `topic_jobs` queue + worker + SSE; structlog + Langfuse; database layer (attempts, mastery, traces, review cards); tests on a throwaway schema per run; merging green PRs; pre-generated topics |
+| **P3** (backend) | Agents & integration | `app/research/`, `app/uploads/`, `app/llm/`, `app/graders/`, `app/api/learn.py`, `app/api/tutor.py`, `app/api/topics.py`, `data/sources/`, `scripts/build_library.*`, `tests/research/`, `tests/uploads/`, `tests/llm/`, `tests/graders/`, `tests/api/` | Allowlist + textbook downloader/HTML reader (P1 indexes); **Deep Research agent**; uploaded-file reader (PDF/DOCX/link); **LLM gateway** (Vertex AI → Bedrock → OpenRouter, per-tier routing); MCQ grading; the **API routes** that connect P1's engine and retrieval, P2's database layer and P4's content/tutor to the web |
+| **P4** (careful, detail-oriented) | Content & tutor | `app/content/`, `app/guardrails/`, `app/tutor/`, `data/golden/`, `data/kg/`, `data/items/`, `data/guardrails/`, `tests/content/`, `tests/guardrails/`, `tests/tutor/` | **Golden topics first (H0–H3):** 2–3 hand-checked topics (source chunks, graph, ~15 items each) used as test data, labelled sample and demo fallback; content pipeline (sources → Knowledge Graph → MCQs with a misconception per wrong option); **verification gate**; `guardrails/metrics.py`; **Socratic tutor** prompts and hint ladder (Vietnamese, cited, never the final answer) |
+| **P5** (frontend/design) | Web app | `apps/web/`, `assets/sena/` | Next.js app on Vercel, built on **mock JSON from H1**: topic input + file upload, research-trail screen, knowledge map (React Flow + `dagre`), learning + tutor screens, **"Vì sao?" panel** rendering `DecisionTrace`, Free/Pro switch, Vietnamese i18n, **backup video** |
 
 ## Stack (decided; changes go through P1)
 - **Web:** Next.js (App Router, TypeScript strict), Tailwind + shadcn/ui, React Flow with **`dagre` auto-layout
   from H0** (never hand-computed x/y; every topic produces a differently shaped graph); deployed on **Vercel**.
 - **Cloud (organizer credits):** **Google Cloud is primary, AWS is backup**; swap the roles if AWS approves GPU quota
   first. Region: Singapore (`asia-southeast1` / `ap-southeast-1`), next to Supabase. Budget alerts on both accounts.
-- **API host:** Python 3.12, FastAPI, Pydantic v2, `uv`, in Docker on a **GPU VM** on the primary cloud (spec below).
+- **API host (P2):** Python 3.12, FastAPI, Pydantic v2, `uv`, in Docker on a **GPU VM** on the primary cloud (spec below).
   The backup cloud keeps a **stopped VM with the same image and compose file**, started only if the primary fails.
   Exposed with a **named Cloudflare Tunnel on the team's own domain** (never `trycloudflare.com`: its URL changes on
   every restart and the web app would point at a dead address); `cloudflared` runs with `--protocol http2`. **The VM
   opens no ports to the internet**; all traffic goes through the tunnel. All containers use `restart: unless-stopped`.
   CORS: the Vercel domain and `http://localhost:3000` from H0; shared API key between web and API.
-- **Deploy:** Vercel deploys the web app on merge to `main`. For the API, GitHub Actions builds the image and pushes
+- **Deploy (P2):** Vercel deploys the web app on merge to `main`. For the API, GitHub Actions builds the image and pushes
   it to GHCR; **Watchtower** on the VM pulls new images automatically. Manual fallback on the VM:
-  `docker compose pull && docker compose up -d`. P1 keeps a VM setup script (Docker, NVIDIA Container Toolkit,
+  `docker compose pull && docker compose up -d`. P2 keeps a VM setup script (Docker, NVIDIA Container Toolkit,
   GHCR login, cloudflared, Watchtower) so the backup VM can be rebuilt in minutes.
-- **Image:** multi-stage build with `uv`: dependencies in a stable layer, `src/` copied last, so a normal merge pulls
+- **Image (P2):** multi-stage build with `uv`: dependencies in a stable layer, `src/` copied last, so a normal merge pulls
   only a few MB. **bge-m3 weights are never in the image**: they live on the VM disk and are bind-mounted
   (`/models/bge-m3:/app/models/bge-m3`). A CPU-only VM uses an ONNX Runtime image (no PyTorch); the GPU VM uses a
   separate GPU image.
-- **Jobs (24 h):** a `topic_jobs` table in Postgres is the queue. The worker is a **separate compose service** from the
-  same image (`command: python -m app.worker`), never inside uvicorn; it claims jobs with
+- **Jobs (24 h, P2):** a `topic_jobs` table in Postgres is the queue. The worker is a **separate compose service** from
+  the same image (`command: python -m app.worker`), never inside uvicorn; it claims jobs with
   `SELECT … FOR UPDATE SKIP LOCKED`. Deep Research runs 3–8 min, never inside a request. Redis + `arq` after the contest.
-- **Progress (SSE):** `GET /topics/{id}/events` sends a heartbeat every 15–20 s (Cloudflare drops idle connections
+- **Progress (SSE, P2):** `GET /topics/{id}/events` sends a heartbeat every 15–20 s (Cloudflare drops idle connections
   after ~100 s), with `Cache-Control: no-cache`. The web app reconnects automatically and reloads state from
   `GET /topics/{id}` (backed by `topic_jobs`).
 - **Data:** Supabase cloud — Postgres + pgvector (`halfvec`), Storage (uploads). Auth after the contest.
   Free tier is 500 MB: **chunk budget ~30,000 (8–10 textbooks)**, chosen to match the pre-generated topics; check
   the database size after each book and stop at ~350 MB; build the HNSW index after loading, not row by row.
   Fallback if the library must be bigger: Supabase Pro for one month.
-- **Embeddings:** BAAI/bge-m3 (1024 dims). Bulk indexing on a **short-lived GPU VM** (delete it right after; Colab as
-  fallback); query embeddings on the API VM (GPU, or ONNX int8 if no GPU quota). Hugging Face hosted bge-m3 as backup. **Only the API process holds the
-  model**; the worker calls the API's internal `POST /internal/embed` on localhost instead of loading a second copy.
-  Encoding runs via `await asyncio.to_thread(...)` so it never blocks the event loop.
-- **LLM:** one gateway, `app/llm/`, with provider adapters: **Vertex AI (primary, on credits)**, **Bedrock**, and
+- **Embeddings:** BAAI/bge-m3 (1024 dims). **P1 writes the model and retrieval code** (`embed.py`, `retrieve.py`);
+  **P2 runs it** — the serving container on the API VM (GPU, or ONNX int8 if no GPU quota) and the short-lived GPU VM
+  for bulk indexing (deleted right after; Colab as fallback). Hugging Face hosted bge-m3 as backup. **Only the API
+  process holds the model**; the worker calls the API's internal `POST /internal/embed` on localhost instead of loading a
+  second copy. Encoding runs via `await asyncio.to_thread(...)` so it never blocks the event loop.
+- **LLM (P3):** one gateway, `app/llm/`, with provider adapters: **Vertex AI (primary, on credits)**, **Bedrock**, and
   **OpenRouter** (last fallback). `app/llm/routing.yaml` maps (tier, task) → an ordered list of `provider:model`; the
   gateway tries them in order on errors or rate limits. **free** = cheap models (e.g. Gemini Flash on Vertex), Nhanh mode
   only, no web search; **pro** = strong models (e.g. Claude on Vertex or Bedrock) + Deep Research. Exact model IDs chosen
-  after the H8 Vietnamese quality test. On OpenRouter avoid `:free` model variants (rate limits).
-- **Observability (24 h):** `structlog` JSON logs (`request_id`, `topic_id`, `tier`) + Langfuse for every LLM call
+  after the H8 Vietnamese quality test (designed by P1). On OpenRouter avoid `:free` model variants (rate limits).
+- **Observability (24 h, P2):** `structlog` JSON logs (`request_id`, `topic_id`, `tier`) + Langfuse for every LLM call
   (model, latency, cost); the Langfuse dashboard is shown at the end of the demo. After the contest:
   OpenTelemetry → Grafana Cloud, Sentry.
-- **Engine:** BKT (mastery), `fsrs` (reviews), graph rules (placement, remediation). Pure functions, tested.
-- **Tests without Docker:** `tests/conftest.py` creates a **throwaway schema per run** (create → migrate → drop) instead
-  of a throwaway database, so every member runs the full suite against **their own free Supabase dev project**. No
-  Docker and no bge-m3 on laptops (tests use the fake embedder). CI keeps its own Postgres service. P1, H0–H3.
+- **Engine (P1):** BKT (mastery), `fsrs` (reviews), graph rules (placement, remediation). Pure functions, tested.
+- **Tests without Docker (P2, H0–H3):** `tests/conftest.py` creates a **throwaway schema per run** (create → migrate →
+  drop) instead of a throwaway database, so every member runs the full suite against **their own free Supabase dev
+  project**. No Docker and no bge-m3 on laptops (tests use the fake embedder). CI keeps its own Postgres service.
 - **CI:** pytest + ruff required; mypy runs but only warns. Playwright end-to-end tests after the contest;
   during the contest P5 keeps a manual end-to-end checklist.
 - **Typed web client:** P5 generates TypeScript types from FastAPI's OpenAPI with `openapi-typescript`, so a contract
-  change breaks the web build instead of the demo.
+  change breaks the web build instead of the demo. Until the stubs exist (H3), P5 uses mock JSON matching P1's H1 draft.
 
-### API VM spec
+### API VM spec (P2)
 | | With GPU (recommended) | CPU only (no GPU quota yet) |
 |---|---|---|
 | Machine | Google Cloud `g2-standard-4` (1× L4) or `n1-standard-4` + 1× T4; AWS `g4dn.xlarge` (1× T4) | 8 vCPU, 32 GB RAM |
@@ -89,20 +92,22 @@ Acceptance at H3: query embedding < ~1 s per Vietnamese question on the VM. Bulk
 the backup VM stays stopped until needed.
 
 ### Before H0 checklist
-- Lead, **today**: request GPU quota on **both** clouds (Singapore + one nearby region; new accounts often start at
+- P1 + P2, **today**: request GPU quota on **both** clouds (Singapore + one nearby region; new accounts often start at
   zero and approval can take a day or more); enable Vertex AI and Bedrock and request model access (Claude on both,
   Gemini on Vertex); set budget alerts on both; ask the organizers for the credit amount, end date, whether GPUs and
   model access are included, and whether a card is required.
-- Lead: Cloudflare account + a cheap domain + a named tunnel on it; Vercel account linked to the repo; Supabase demo
-  project; OpenRouter key with a spending limit (fallback only); members added as GitHub collaborators; cloud
-  service-account credentials shared only through a password manager.
+- P2: Cloudflare account + a cheap domain + a named tunnel on it; Vercel account linked to the repo; Supabase demo
+  project; VM setup script tested (`docker run hello-world` works on the VM).
+- P1: members added as GitHub collaborators; OpenRouter key with a spending limit (fallback only); cloud
+  service-account credentials shared only through a password manager; first draft of `app/schemas.py`.
+- P4: pick the 2–3 golden topics (match the pre-generated list) and gather their source pages.
 - Everyone: Git, Python 3.12, `uv`, their AI coding agent; own Supabase dev project (for running tests) and keys in
   `.env`. Laptops need no GPU and no Docker; 8 GB RAM is enough, 16 GB is comfortable; keep a few GB of disk free.
-- P5: Node.js 20 + pnpm. P1: VM setup script tested (`docker run hello-world` works on the VM).
+- P5: Node.js 20 + pnpm.
 
-## Contracts (frozen at H3; only P1 changes them, announced at a checkpoint)
+## Contracts (draft by H1, frozen at H3; only P1 changes them, announced at a checkpoint)
 
-### Knowledge Graph (P3 writes, P4 + P5 read) — stored in the DB; YAML for fixtures
+### Knowledge Graph (P4 writes, P1 + P5 read) — stored in the DB; YAML for fixtures and golden topics
 ```yaml
 concepts:
   - slug: photosynthesis-light-reactions   # kebab-case, unique per subject
@@ -114,7 +119,7 @@ edges:                                      # prerequisite -> concept; loader re
   - {from: cell-structure, to: photosynthesis-light-reactions}
 ```
 
-### Items (P3 writes, P4 reads) — MCQ only
+### Items (P4 writes, P1 + P3 read) — MCQ only
 ```yaml
 concept: photosynthesis-light-reactions
 misconceptions:
@@ -135,55 +140,63 @@ Every wrong option has a `misconception`; every item has a `source` and `chunk_i
 the verifier answers the item blind from its cited chunks only; a mismatch or no answer sets `needs_review`, and only
 `verified` items are served.
 
-### API (FastAPI, JSON; Pydantic models in `app/schemas.py`). P1 ships all routes as **stubs with fixture data** by H3.
-| Method & path | Owner | Request → Response |
+### Golden topics (P4, `data/golden/<slug>/`)
+Each holds the source chunks, a hand-checked `graph.yaml`, ~15 hand-checked items and their expected answers. Uses:
+real test data for P1, P3 and P5 from H3; the labelled sample for `guardrails/metrics.py`; safe fallback demo topics.
+
+### API (FastAPI, JSON; Pydantic models in `app/schemas.py`). P2 ships all routes as **stubs with fixture data** by H3.
+Route owner = who writes the endpoint; logic comes from the lanes in brackets.
+| Method & path | Route owner | Request → Response |
 |---|---|---|
-| `POST /learners` | P1 | `{display_name}` → `{learner_id}` |
-| `POST /topics` | P1 (pipeline P2 + P3) | `{goal_vi?, upload_id?, mode: "quick"\|"deep", tier: "free"\|"pro"}` → `{topic_id, cached}` |
-| `GET /topics/{id}` | P1 | → `{status: queued\|researching\|indexing\|graph\|items\|ready\|failed, step_vi, progress, subject_slug?, graph_ready, items_ready, sources: [{title, publisher, url, license}], trail: [{at, kind: search\|read\|select, text_vi, url?}]}` (current state from `topic_jobs`; used to recover after a dropped stream) |
-| `GET /topics/{id}/events` | P1 | SSE stream of the same fields as they change, plus a `heartbeat` event every 15–20 s |
-| `GET /topics/cached` | P1 | → `{topics: [{subject_slug, name_vi}]}` |
-| `POST /uploads` | P2 | multipart PDF/DOCX or `{url}` → `{upload_id, pages, text_ok}` |
-| `GET /graph?learner_id=&subject=` | P4 | → `{nodes: [{slug, name_vi, p_known, mastered}], edges: [{from, to}]}` |
-| `POST /placement/next` | P4 | `{learner_id, subject}` → `{item \| null, done, gap_slug?, trace: DecisionTrace}` |
-| `GET /next-item?learner_id=&subject=` | P4 | → `{item, reason_vi}` |
-| `POST /attempts` | P4 | `{learner_id, item_id, answer, hints_used}` → `{correct, misconception_vi?, p_known, mastered, remediation?: {concept_slug, reason_vi}, traces: [DecisionTrace]}` |
-| `POST /tutor/hint` | P4 | `{learner_id, item_id, level, last_answer?, tier}` → `{hint_vi, citations: [{title, section, url}]}` |
-| `POST /ask` | P2 | `{question, subject, tier}` → `{answer_vi, citations}` |
-| `GET /reviews/due?learner_id=` | P4 | → `{cards: [{concept_slug, due_at}]}` |
-| `POST /exam-plan` | P4 | `{learner_id, subject, exam_date}` → `{days: [{date, concept_slugs, minutes}]}` |
+| `POST /learners` | P2 | `{display_name}` → `{learner_id}` |
+| `POST /topics` | P3 (pipeline P3 + P4, retrieval P1) | `{goal_vi?, upload_id?, mode: "quick"\|"deep", tier: "free"\|"pro"}` → `{topic_id, cached}` |
+| `GET /topics/{id}` | P2 | → `{status: queued\|researching\|indexing\|graph\|items\|ready\|failed, step_vi, progress, subject_slug?, graph_ready, items_ready, sources: [{title, publisher, url, license}], trail: [{at, kind: search\|read\|select, text_vi, url?}]}` (current state from `topic_jobs`; used to recover after a dropped stream) |
+| `GET /topics/{id}/events` | P2 | SSE stream of the same fields as they change, plus a `heartbeat` event every 15–20 s |
+| `GET /topics/cached` | P2 | → `{topics: [{subject_slug, name_vi}]}` |
+| `POST /uploads` | P3 | multipart PDF/DOCX or `{url}` → `{upload_id, pages, text_ok}` |
+| `GET /graph?learner_id=&subject=` | P3 (engine P1) | → `{nodes: [{slug, name_vi, p_known, mastered}], edges: [{from, to}]}` |
+| `POST /placement/next` | P3 (engine P1) | `{learner_id, subject}` → `{item \| null, done, gap_slug?, trace: DecisionTrace}` |
+| `GET /next-item?learner_id=&subject=` | P3 (engine P1) | → `{item, reason_vi}` |
+| `POST /attempts` | P3 (grading P3, engine P1) | `{learner_id, item_id, answer, hints_used}` → `{correct, misconception_vi?, p_known, mastered, remediation?: {concept_slug, reason_vi}, traces: [DecisionTrace]}` |
+| `POST /tutor/hint` | P3 (tutor P4) | `{learner_id, item_id, level, last_answer?, tier}` → `{hint_vi, citations: [{title, section, url}]}` |
+| `POST /ask` | P3 (retrieval P1) | `{question, subject, tier}` → `{answer_vi, citations}` |
+| `GET /reviews/due?learner_id=` | P3 (engine P1) | → `{cards: [{concept_slug, due_at}]}` |
+| `POST /exam-plan` | P3 (engine P1) | `{learner_id, subject, exam_date}` → `{days: [{date, concept_slugs, minutes}]}` |
 
 `item` sent to the web never contains the answer: `{id, kind, prompt_vi, options: [{label}]}`.
 
 ### Python interfaces
-- `app/rag/embed.py::Embedder.embed(texts) -> list[list[float]]` (exists; add ONNX/GPU/hosted implementations).
-- `app/rag/retrieve.py::search(query, subject, k=5) -> list[Citation]`.
-- `app/llm/gateway.py::complete(task, tier, system, messages, schema=None) -> str | BaseModel` — reads
+- `app/rag/embed.py::Embedder.embed(texts) -> list[list[float]]` (P1; exists; add ONNX/GPU/hosted implementations).
+- `app/rag/retrieve.py::search(query, subject, k=5) -> list[Citation]` (P1).
+- `app/rag/rerank.py` (P1, optional): rerank retrieved chunks (e.g. `bge-reranker-v2-m3`); only if H8 retrieval is weak.
+- `app/llm/gateway.py::complete(task, tier, system, messages, schema=None) -> str | BaseModel` (P3) — reads
   `routing.yaml`, validates JSON with Pydantic, retries, falls back to the next model. Nothing else imports an LLM SDK.
-- `app/research/agent.py::research(goal, on_event) -> list[ChosenSource]` — allowlisted domains only,
+- `app/research/agent.py::research(goal, on_event) -> list[ChosenSource]` (P3) — allowlisted domains only,
   ≤ 15 searches, ≤ 12 page reads, 8-minute cap.
-- `app/engine/bkt.py`, `app/engine/srs.py` (exist): pure, no DB.
-- `app/engine/graph.py` (P4): prerequisite DAG helpers + `root_cause(graph, mastery, failed_slug) -> concept_slug`
+- `app/engine/bkt.py`, `app/engine/srs.py` (P1; exist): pure, no DB.
+- `app/engine/graph.py` (P1): prerequisite DAG helpers + `root_cause(graph, mastery, failed_slug) -> (concept_slug, trace)`
   (walk prerequisites to the weakest one). Pure, no DB.
-- `app/engine/placement.py` (P4): `next_question(graph, answers) -> slug | None` and `gap(graph, answers) -> slug`,
+- `app/engine/placement.py` (P1): `next_question(graph, answers) -> (slug | None, trace)` and `gap(graph, answers) -> slug`,
   the graph-walk placement below. Pure, no DB.
-- `app/guardrails/answerability.py` (P3): `check(text, cited_chunks) -> Verdict{supported, reason}`, used on every
-  generated item before it is stored and on every tutor hint before it is shown (P4 calls it).
-- `app/guardrails/metrics.py` (P3): runs the checks over the labelled set in `data/guardrails/` and reports error rate,
-  catch rate and false alarms; the numbers go on the demo dashboard.
-- `app/rag/rerank.py` (P2, optional): rerank retrieved chunks (e.g. `bge-reranker-v2-m3`); only if H8 retrieval is weak.
+- `app/services/` (P2): load/save attempts, mastery, traces and review cards; the engine never touches the DB.
+- `app/guardrails/answerability.py` (P4): `check(text, cited_chunks) -> Verdict{supported, reason}`, used on every
+  generated item before it is stored and on every tutor hint before it is shown.
+- `app/guardrails/metrics.py` (P4, evaluation design P1): runs the checks over the labelled set in `data/guardrails/`
+  (built from the golden topics) and reports error rate, catch rate and false alarms; the numbers go on the dashboard.
+- `app/tutor/hints.py::hint(item, level, last_answer, chunks, tier) -> Hint` (P4): Socratic hint ladder via the gateway,
+  checked by `answerability` before it is returned.
 
-### Placement (graph walk, P4)
+### Placement (graph walk, P1)
 Start at an advanced concept. Correct → mark its prerequisites as known (raise `p_known`) and move to the next
 unknown branch. Wrong → ask about one of its prerequisites. Stop after ~6 questions or when the gap is located;
 return `gap_slug`. BKT keeps updating mastery after every later attempt.
 
-### DecisionTrace (P4 defines in `app/engine/trace.py`; P5 renders)
+### DecisionTrace (P1 defines in `app/engine/trace.py`; P5 renders)
 `{kind, concept_slug, at, prior, evidence: {item_id?, correct?, misconception?, slip?, guess?}, posterior, rule, rule_vi,
-alternatives: [{concept_slug, p_known, why_not_vi}]}` — pure data from the engine, stored per learner (migration `0003`),
-returned by `/placement/next` and `/attempts`, shown in the web app's "Vì sao?" panel. `bkt.update` and `srs.review`
-stay unchanged; traced wrappers (`update_traced`, `review_traced`) and `graph.root_cause` / `placement.next_question`
-return `(result, trace)`.
+alternatives: [{concept_slug, p_known, why_not_vi}]}` — pure data from the engine, stored per learner (migration `0003`,
+via P2's services), returned by `/placement/next` and `/attempts`, shown in the web app's "Vì sao?" panel. `bkt.update`
+and `srs.review` stay unchanged; traced wrappers (`update_traced`, `review_traced`) and `graph.root_cause` /
+`placement.next_question` return `(result, trace)`.
 
 ## Two modes
 | | Nhanh (NotebookLM-style) | Nghiên cứu sâu (Deep Research) |
@@ -192,32 +205,34 @@ return `(result, trace)`.
 | Time | < 60 s | target 3–5 min, cap 8 min |
 | Tier | Free (cheap models) | Pro (strong models) |
 
-Allowlist (`data/sources/allowlist.yaml`, P1 approves): OpenStax, LibreTexts, MIT OpenCourseWare, Saylor Academy,
-Open Textbook Library, Wikibooks; Wikipedia last resort, labelled. No "ND" licences; licence recorded per source.
+Allowlist (`data/sources/allowlist.yaml`, P3 writes, P1 approves): OpenStax, LibreTexts, MIT OpenCourseWare, Saylor
+Academy, Open Textbook Library, Wikibooks; Wikipedia last resort, labelled. No "ND" licences; licence recorded per source.
 Deep Research quality bar: ≥ 3 sources from ≥ 2 publishers; prerequisites from the sources' chapter order and
 objectives; everything cited; answerability-checked items.
 
 ## Timeline (H0 = kickoff)
-| Window | P1 | P2 | P3 | P4 | P5 |
+| Window | P1 Lead + ML core | P2 Platform | P3 Agents & integration | P4 Content & tutor | P5 Web |
 |---|---|---|---|---|---|
-| **H0–H1** | Repo, CLAUDE/TEAM, CI, FastAPI skeleton, schema on Supabase, Spec Kit setup | Allowlist + HTML reader (own folder) | Graph/item formats + validators (own folder) | BKT module (own folder) | Next.js skeleton, Sena assets |
-| **H1–H3** | Contracts + API stubs, primary GPU VM (Docker + named tunnel + GHCR/Watchtower), backup VM image, tests switched to a throwaway schema per run | Index 2–3 textbooks on a temporary GPU VM; **measure bge-m3 on the API VM**; first Vertex AI call | Generate a graph from 1 sample chapter | FSRS wrapper + tests; placement design | Wire skeleton to API stubs |
-| **H3** checkpoint | Contracts frozen, foundation merged | | | | |
-| **H3–H8** | structlog + Langfuse; `topic_jobs` queue + worker + SSE with heartbeat | Retrieval + gateway + Nhanh mode; uploads | Pipeline graph → items → check | Grading, graph-walk placement, next item | Topic input + upload, map, learning screen |
-| **H8** checkpoint | Nhanh end to end on **3 unfamiliar topics**. Not solid → whole team on Nhanh + pre-generated topics; Deep Research becomes a bonus. Pick Free/Pro models from the Vietnamese test. P2 decides on the reranker from the retrieval check. | | | | |
-| **H8–H11** | Integration, dashboard | Deep Research agent, full library | Quality across subject types | Remediation + Socratic tutor | Research-trail + tutor screens, Free/Pro switch |
+| **H0–H1** | **Draft contracts** (`schemas.py`, YAML formats, `DecisionTrace`); engine specs in `specs/engine/` | Repo, CI, FastAPI skeleton, schema on Supabase, Spec Kit setup; start the GPU VM | Allowlist + HTML reader; gateway skeleton (own folders) | **Golden topic #1** (chunks, graph, ~15 items) | Next.js skeleton, Sena assets |
+| **H1–H3** | BKT/FSRS traced wrappers, `graph.py`; retrieval on golden topic #1 | API stubs from the contracts; **bge-m3 container + `/internal/embed`**; tunnel, Watchtower, backup VM image; tests on a throwaway schema per run | First Vertex AI call through the gateway; file reader | **Golden topics #2–3**; graph-generation prompt on a sample chapter | Map + "Vì sao?" panel on **mock JSON** |
+| **H3** checkpoint | Contracts frozen; golden topics 1–2 ready; engine and UI tested on real data; bge-m3 measured on the VM | | | | |
+| **H3–H8** | `placement.py`, `DecisionTrace` everywhere; retrieval evaluation on golden topics; library indexing (P2 runs the GPU VM) | structlog + Langfuse; `topic_jobs` queue + worker + SSE with heartbeat; database layer | Grading; routes for graph, placement, attempts, ask; uploads; Nhanh mode wiring | Pipeline graph → items; verification gate | Topic input + upload, map, learning screen on stubs |
+| **H8** checkpoint | Nhanh end to end on **3 unfamiliar topics**. Not solid → whole team on Nhanh + pre-generated topics; Deep Research becomes a bonus. Pick Free/Pro models from the Vietnamese test. P1 decides on the reranker from the retrieval evaluation. | | | | |
+| **H8–H11** | Root-cause remediation rules; reranker if needed; engine tests on varied graph shapes | Integration, dashboard, deploy hardening | Deep Research agent; tutor route; full library download | Tutor prompts + hint ladder; quality across subject types | Research-trail + tutor screens, Free/Pro switch |
 | **H11–H12** | Everyone plays judge with an unfamiliar topic; measure time + cost per mode | | | | |
-| **H12** | Decide: Deep Research live on stage, or shown as a recording | | | | |
-| **H12–H18** | Pre-generate topics, demo script | Fixes, eval | Fixes per subject type; label 50 items + 20 hints (team helps, ~1 h), run `guardrails/metrics.py` | Reviews + exam plan; tutor eval ≥ 18/20 | Polish, manual E2E checklist |
-| **H18** freeze | Tag `demo-v1` | | | | |
-| **H18–H23** | 3 clean runs with unseen topics; pitch timed to the research | | | | **Backup video** |
+| **H12** | P1 decides: Deep Research live on stage, or shown as a recording | | | | |
+| **H12–H18** | Metrics review with P4; tutor evaluation ≥ 18/20 with P4; algorithm part of the pitch | Pre-generate topics, monitoring | Fixes | Label 50 items + 20 hints (team helps, ~1 h), run `guardrails/metrics.py` | Polish, manual E2E checklist |
+| **H18** freeze | Tag `demo-v1` (P2) | | | | |
+| **H18–H23** | Demo script + pitch; 3 clean runs with unseen topics, timed to the research | | | | **Backup video** |
 | **H23–H24** | Buffer | | | | |
 
 ## Git workflow
-- Branch per lane: `p1/platform`, `p2/sources`, `p3/content`, `p4/learning`, `p5/web`; one worktree per extra agent.
+- Branch per lane: `p1/ml-core`, `p2/platform`, `p3/integration`, `p4/content`, `p5/web`; one worktree per extra agent.
 - **Rebase at every checkpoint**: `git fetch && git rebase origin/main`, then run tests.
-- PR title `[P3] ...`; CI green; P1 merges. Stacked PRs: **retarget to `main` before deleting the base branch**.
-- Migrations reserved: `0003` P4 (`decision_traces`), `0004` P3 (`items.chunk_ids`, `items.status`), `0005` P2 (`halfvec` + uploads), `0006` P1 (`topic_jobs`, `llm_calls`). Additive only.
+- PR title `[P3] ...`; CI green; P2 merges routine PRs, P1 approves contract changes. Stacked PRs: **retarget to `main`
+  before deleting the base branch**.
+- Migrations reserved: `0003` P1 (`decision_traces`), `0004` P4 (`items.chunk_ids`, `items.status`), `0005` P1
+  (`halfvec`), `0006` P2 (`topic_jobs`, `llm_calls`), `0007` P3 (uploads). Additive only; P2 merges them in order.
 - Dependencies via `uv add` / `pnpm add` in your own PR; on lockfile conflicts take `main`'s and re-lock.
 - **Secrets:** each person has their own Supabase dev project and keys in `.env`. Demo keys only via a password manager.
 
@@ -226,7 +241,8 @@ First prompt (copy and fill in):
 > You are working on lane **P_ (name)** in `TEAM.md`. Only edit the paths that lane owns.
 > Task: **(your row in the timeline for the current window)**. Write or update `specs/<feature>/spec.md`,
 > `plan.md` and `tasks.md` first. Follow the contracts in `TEAM.md` exactly; if one seems wrong, stop and tell me.
-> Use fixtures for anything another lane owns. When done: run tests, update `MAP.md`, write a PR description.
+> Use fixtures or golden topics for anything another lane owns. When done: run tests, update `MAP.md`, write a PR
+> description.
 
 Agent rules: never push to `main`, never edit another lane's files, never change a contract, never read `.env`.
 
@@ -237,32 +253,33 @@ explanations cited; contract shapes exact; `MAP.md` updated.
 ## Risks and fallbacks
 | Risk | Fallback | Owner |
 |---|---|---|
-| Repo/contracts late past H3 | Lanes keep working in their own folders; P1 does nothing else in H0–H3 | P1 |
-| Tunnel URL changes or SSE stream drops mid-research | Named tunnel on own domain; heartbeat every 15–20 s; web reconnects and reloads `GET /topics/{id}` | P1, P5 |
-| Primary VM down | Start the backup VM on the other cloud (same image + compose + tunnel token); `/health` check; Render/Railway last resort | P1 |
-| GPU quota not approved before H0 | CPU VM (8 vCPU / 32 GB) with ONNX int8; swap primary cloud if the other approves first | P1, P2 |
-| Cloud credits burn (GPU VM left running) | Budget alerts on both clouds; delete the indexing VM right after use; backup VM stays stopped | P1 |
-| Vertex model access missing or rate-limited | Gateway falls through to Bedrock, then OpenRouter (`routing.yaml` order) | P2 |
-| bge-m3 too slow on the host | ONNX int8 → HF hosted → multilingual embedding API + re-index | P2 |
-| Docker image too heavy (10–20 min per update) | Weights bind-mounted from the host; multi-stage `uv` build; ONNX image on CPU hosts | P1 |
-| Network blocks QUIC/UDP, tunnel won't connect | `cloudflared --protocol http2`; `restart: unless-stopped` | P1 |
-| bge-m3 loaded twice (API + worker), host runs out of RAM | Only the API holds the model; worker uses `/internal/embed`; measure RAM at H3 | P1, P2 |
-| Database exceeds Supabase free tier | `halfvec`, ~30k-chunk budget, size check per book, HNSW after load; Supabase Pro for a month | P2 |
+| Contracts late past H1 / foundation late past H3 | Lanes keep working on golden topics, mock JSON and their own folders; P1 does nothing but contracts in H0–H1 | P1, P2 |
+| Tunnel URL changes or SSE stream drops mid-research | Named tunnel on own domain; heartbeat every 15–20 s; web reconnects and reloads `GET /topics/{id}` | P2, P5 |
+| Primary VM down | Start the backup VM on the other cloud (same image + compose + tunnel token); `/health` check; Render/Railway last resort | P2 |
+| GPU quota not approved before H0 | CPU VM (8 vCPU / 32 GB) with ONNX int8; swap primary cloud if the other approves first | P2, P1 |
+| Cloud credits burn (GPU VM left running) | Budget alerts on both clouds; delete the indexing VM right after use; backup VM stays stopped | P2 |
+| Vertex model access missing or rate-limited | Gateway falls through to Bedrock, then OpenRouter (`routing.yaml` order) | P3 |
+| bge-m3 too slow on the VM | ONNX int8 → HF hosted → multilingual embedding API + re-index | P1, P2 |
+| Docker image too heavy (10–20 min per update) | Weights bind-mounted from the VM disk; multi-stage `uv` build; ONNX image on CPU VMs | P2 |
+| Network blocks QUIC/UDP, tunnel won't connect | `cloudflared --protocol http2`; `restart: unless-stopped` | P2 |
+| bge-m3 loaded twice (API + worker), VM runs out of RAM | Only the API holds the model; worker uses `/internal/embed`; measure RAM at H3 | P2, P1 |
+| Database exceeds Supabase free tier | `halfvec`, ~30k-chunk budget, size check per book, HNSW after load; Supabase Pro for a month | P1 |
 | Knowledge-map nodes overlap | `dagre`/`elkjs` auto-layout from H0; test shallow/deep and small/large graphs | P5 |
-| Deep Research slow, wrong or off-allowlist | 8-min cap → Nhanh → pre-generated topic; domain filter in code | P1, P2, P3 |
-| Judge picks a topic with no open textbook | Wikibooks/Wikipedia labelled as encyclopedia; state the limit openly | P2 |
-| Generated question wrong in front of judges | `guardrails/answerability.py` on every item and hint, measured error rate from `metrics.py`, "Bản nháp tự động" label, rehearse many subject types | P3 |
-| Cheap model returns bad JSON or weak Vietnamese | Pydantic validation + retry, fallback model list, H8 Vietnamese test | P2 |
-| Engine/UI only works for one graph shape | Test shallow/deep, small/large graphs; vary topics at every checkpoint | P4, P5 |
-| Uploaded file is scanned, table-heavy or has broken fonts | Check text on upload, ask for another file or link, page cap, rehearse with 5–10 real files | P2 |
-| LLM cost too high | Measure at H11; lower effort, fewer sources (lead decides); budget alerts on both clouds, spending limit on OpenRouter | P1, P2 |
+| Deep Research slow, wrong or off-allowlist | 8-min cap → Nhanh → pre-generated topic; domain filter in code | P3, P4, P2 |
+| Judge picks a topic with no open textbook | Wikibooks/Wikipedia labelled as encyclopedia; state the limit openly | P3 |
+| Generated question wrong in front of judges | Verification gate on every item and hint, measured error rate from `metrics.py`, "Bản nháp tự động" label, rehearse many subject types | P4 |
+| Cheap model returns bad JSON or weak Vietnamese | Pydantic validation + retry, fallback model list, H8 Vietnamese test | P3, P1 |
+| Engine/UI only works for one graph shape | Test shallow/deep, small/large graphs (golden topics differ on purpose); vary topics at every checkpoint | P1, P5 |
+| Uploaded file is scanned, table-heavy or has broken fonts | Check text on upload, ask for another file or link, page cap, rehearse with 5–10 real files | P3 |
+| Deep Research not ready, team has no data to test with | Golden topics from H3 cover the engine, retrieval and UI without Deep Research | P4 |
+| LLM cost too high | Measure at H11; lower effort, fewer sources (P1 decides); budget alerts on both clouds, spending limit on OpenRouter | P1, P2 |
 | Web not ready at H18 | Scripted happy path only; backup video | P5 |
-| Venue wifi fails | Pre-generated topics + backup video | P1 |
+| Venue wifi fails | Pre-generated topics + golden topics + backup video | P2, P1 |
 
 ## Demo acceptance (run at every checkpoint after H8)
-1. A teammate plays judge with an unseen topic, or uploads a file → research trail shows allowlisted sources. *(P2, P5)*
-2. Path ready (Nhanh < 60 s; Deep Research < 8 min) with a cited knowledge map. *(P2, P3, P5)*
-3. Graph-walk placement in ~6 questions locates a gap; the map lights up. *(P4, P5)*
-4. Wrong answer → remediation to the weak prerequisite; hint asked → Socratic hint in Vietnamese with citations, no final answer. *(P4)*
-5. Correct answer → mastery rises, Sena praises understanding, a review is scheduled. *(P4, P5)*
-6. Dashboard shows time, cost and dropped questions for that topic, plus the measured guardrail error rate. *(P1, P3)*
+1. A teammate plays judge with an unseen topic, or uploads a file → research trail shows allowlisted sources. *(P3, P5)*
+2. Path ready (Nhanh < 60 s; Deep Research < 8 min) with a cited knowledge map. *(P3, P4, P5)*
+3. Graph-walk placement in ~6 questions locates a gap; the map lights up; "Vì sao?" explains the choice. *(P1, P5)*
+4. Wrong answer → remediation to the weak prerequisite; hint asked → Socratic hint in Vietnamese with citations, no final answer. *(P1, P4)*
+5. Correct answer → mastery rises, Sena praises understanding, a review is scheduled. *(P1, P5)*
+6. Dashboard shows time, cost and dropped questions for that topic, plus the measured guardrail error rate. *(P2, P4)*
