@@ -39,9 +39,10 @@ LLM is **not** the decision maker. It sits inside a harness:
 
 ## Stack (decided — details and contracts in `TEAM.md`)
 - Web: `apps/web` — Next.js App Router, TypeScript strict, Tailwind + shadcn/ui, React Flow + `dagre` auto-layout; Vercel.
-- API: `apps/api` — Python 3.12, FastAPI, Pydantic v2, uv; Docker on a teammate's machine via a named Cloudflare
-  Tunnel (`--protocol http2`) on the team's domain; multi-stage images from GHCR, auto-updated by Watchtower.
-  Model weights are bind-mounted from the host, never baked into the image.
+- API: `apps/api` — Python 3.12, FastAPI, Pydantic v2, uv; Docker on a GPU VM on Google Cloud (AWS backup VM, roles
+  swappable), Singapore, via a named Cloudflare Tunnel (`--protocol http2`) on the team's domain; the VM opens no
+  ports. Multi-stage images from GHCR, auto-updated by Watchtower. Model weights live on the VM disk and are
+  bind-mounted, never baked into the image.
 - Jobs: `topic_jobs` table in Postgres as the queue (`SELECT … FOR UPDATE SKIP LOCKED`); the worker is a separate
   compose service from the same image (Redis after the contest). Never long work inside a request; SSE progress
   with a heartbeat every 15–20 s.
@@ -49,8 +50,9 @@ LLM is **not** the decision maker. It sits inside a harness:
   Migrations in `supabase/migrations/`.
 - Embeddings: BAAI/bge-m3 (1024 dims) behind `Embedder`. Only the API process loads the model (worker calls
   `/internal/embed`); encode via `asyncio.to_thread`, never blocking the event loop.
-- LLM: **OpenRouter only**, through `app/llm/gateway.py`; model per (tier, task) in `app/llm/routing.yaml`.
-  Never call an LLM SDK or HTTP API directly from features.
+- LLM: only through `app/llm/gateway.py` (adapters: Vertex AI primary, Bedrock, OpenRouter fallback);
+  `app/llm/routing.yaml` maps (tier, task) → ordered `provider:model` list. Never call an LLM SDK or HTTP API
+  directly from features.
 - Observability: structlog JSON logs + Langfuse (OpenTelemetry and Sentry after the contest).
 
 ## Code conventions

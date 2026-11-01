@@ -10,7 +10,7 @@ Planned entries are marked _(planned)_ until they exist.
 | `PLAN.md` | Phased build plan and current status |
 | `TEAM.md` | 24-hour team plan: lanes, owned paths, stack, contracts, timeline, git workflow, risks |
 | `specs/` _(planned)_ | GitHub Spec Kit: one folder per feature (spec, plan, tasks) |
-| `docker/` _(planned, P1)_ | API image, compose for the host machine (API + worker, Watchtower, named Cloudflare Tunnel) |
+| `docker/` _(planned, P1)_ | API image, compose for the cloud VM (API + worker, Watchtower, named Cloudflare Tunnel), VM setup script |
 | `context/product-brief.vi.md` | Original product brief (Vietnamese) |
 | `context/` | Reference material: research, textbook notes, algorithm papers |
 | `outputs/` | Generated deliverables, not source code |
@@ -33,7 +33,7 @@ Planned entries are marked _(planned)_ until they exist.
 | `apps/api/app/observability/` _(planned, P1)_ | structlog + Langfuse setup (OpenTelemetry, Sentry after the contest) |
 | `apps/api/app/rag/` | `notebook.py` (ipynb → chunks), `embed.py` (bge-m3, optional `embed` extra), `store.py`, `ingest.py` CLI; retrieval planned (Day 4) |
 | `data/raw/thinkpython/` | Downloaded Think Python 3e notebooks + `SOURCE_SHA` (git-ignored; re-download to rebuild) |
-| `apps/api/app/llm/` _(planned, P2)_ | OpenRouter gateway + `routing.yaml` (tier × task → model) |
+| `apps/api/app/llm/` _(planned, P2)_ | LLM gateway (Vertex AI, Bedrock, OpenRouter adapters) + `routing.yaml` (tier × task → ordered provider:model list) |
 | `data/sources/` _(planned, P2)_ | Allowlist of open-education sites + library manifest |
 | `data/kg/` _(planned)_ | Knowledge Graph YAML fixtures |
 | `data/items/` _(planned)_ | MCQ item fixtures with misconception tags |

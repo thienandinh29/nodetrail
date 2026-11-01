@@ -52,7 +52,7 @@ Two modes and two tiers:
 |---|---|---|
 | Sources | Curated, pre-indexed open-textbook library + learner's upload (PDF, DOCX, link) | Agent searches and reads an allowlist of reputable open-education sites |
 | Time | < 60 s | target 3–5 min, hard cap 8 min |
-| Tier / models | Free — cheap models via OpenRouter, no web search | Pro — strong models via OpenRouter + web search |
+| Tier / models | Free — cheap models (e.g. Gemini Flash on Vertex AI), no web search | Pro — strong models (e.g. Claude on Vertex AI/Bedrock) + web search |
 
 Deep Research quality bar: ≥ 3 sources from ≥ 2 publishers; prerequisites follow the sources' chapter order and
 learning objectives; every concept and item cited; every item passes an answerability check; licence recorded per

@@ -6,7 +6,7 @@ feature freeze at H18). Milestones:
 
 | Hour | Milestone |
 |---|---|
-| H3 | Repo, CI, schema, contracts + API stubs, host machine + tunnel, bge-m3 measured |
+| H3 | Repo, CI, schema, contracts + API stubs, cloud GPU VM + tunnel, bge-m3 measured, first Vertex AI call |
 | H8 | Nhanh mode end to end on 3 unfamiliar topics; Free/Pro models chosen |
 | H12 | Deep Research decision (live on stage or recording) |
 | H18 | Feature freeze, tag `demo-v1` |
@@ -42,10 +42,10 @@ Each phase should be finished properly (tests, docs) before the next. Estimates 
 
 ## Decisions made
 - Demo: the judge's own topic or uploaded file; no pre-built subject. MCQ only.
-- Web: Next.js on Vercel. API: FastAPI in Docker on a teammate's machine via Cloudflare Tunnel (Render/Railway fallback).
-- Data: Supabase (Postgres + pgvector, Storage). Jobs: Redis + arq worker.
-- Embeddings: BAAI/bge-m3, 1024 dims (bulk on a Colab GPU; queries on the host, GPU or ONNX int8).
-- LLM: OpenRouter with per-tier routing (Free = cheap models, Pro = strong models).
+- Web: Next.js on Vercel. API: FastAPI in Docker on a Google Cloud GPU VM in Singapore (AWS backup VM, roles swappable), via a named Cloudflare Tunnel; organizer cloud credits.
+- Data: Supabase (Postgres + pgvector `halfvec`, Storage), ~30k-chunk budget. Jobs: Postgres `topic_jobs` queue + worker service (Redis after the contest).
+- Embeddings: BAAI/bge-m3, 1024 dims (bulk on a temporary GPU VM; queries on the API VM, GPU or ONNX int8).
+- LLM: gateway with Vertex AI primary, Bedrock and OpenRouter fallbacks; per-tier routing (Free = cheap models, Pro = strong models).
 - Planning: GitHub Spec Kit per feature. CI: pytest + ruff required, mypy warn-only.
 
 ## Open decisions
