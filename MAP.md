@@ -5,7 +5,8 @@ Planned entries are marked _(planned)_ until they exist.
 
 | Path | Purpose |
 |---|---|
-| `CLAUDE.md` | Rules and working agreement for Claude (auto-loaded) |
+| `CLAUDE.md` | Rules and working agreement for Claude (auto-loaded; imports only `MAP.md` and `SPEC.md`) |
+| `CLAUDE.local.md.example` | Per-person lane template; copy to git-ignored `CLAUDE.local.md` |
 | `SPEC.md` | What NodeTrail must do: features, behaviors, non-goals |
 | `PLAN.md` | Phased build plan and current status |
 | `TEAM.md` | 24-hour team plan: lanes, owned paths, stack, contracts, timeline, git workflow, risks |

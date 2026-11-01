@@ -2,7 +2,7 @@
 
 ## Current: 24-hour team build
 The contest build runs as the H0–H24 plan in `TEAM.md` (5 lanes, contracts frozen at H3, scope decision at H8,
-integration run H7–H8, feature freeze at H18). Milestones:
+integration run H7–H8, feature freeze at H18). If this summary and `TEAM.md` disagree, `TEAM.md` wins. Milestones:
 
 | Hour | Milestone |
 |---|---|

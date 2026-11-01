@@ -277,6 +277,8 @@ P3 watches the VM and merges green PRs.
 - **Secrets:** each person has their own Supabase dev project and keys in `.env`. Demo keys only via a password manager.
 
 ## Working with your AI agent
+`CLAUDE.md` does not auto-load this file. Before H0, each person copies `CLAUDE.local.md.example` to
+`CLAUDE.local.md` (git-ignored) and fills in their lane, so every session knows it without reading the whole plan.
 First prompt (copy and fill in):
 > You are working on lane **P_ (name)** in `TEAM.md`. Only edit the paths that lane owns.
 > Task: **(your row in the timeline for the current window)**. Write or update `specs/<feature>/spec.md`,
