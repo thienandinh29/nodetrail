@@ -8,7 +8,7 @@ the contest, (3) may code written before the contest be reused, (4) how long is 
 was cut to 3 minutes). If (3) is "no", start a fresh repo with this same plan; (4) decides the demo script.
 
 The plan has two versions, chosen by the answers to (2) and (3); see "Before H0 checklist":
-- **Pre-H0 allowed:** the draft `schemas.py`, the throwaway-schema `conftest.py`, migration `0005` and (if (2) is
+- **Pre-H0 allowed:** the draft `schemas.py`, the throwaway-schema `conftest.py`, migration `0003` and (if (2) is
   "yes") the library download + index are done before H0. The timeline below still holds; those rows become checks.
 - **Everything from H0:** follow the timeline exactly as written.
 
@@ -62,8 +62,10 @@ The plan has two versions, chosen by the answers to (2) and (3); see "Before H0 
 - **Data:** Supabase cloud — Postgres + pgvector (`halfvec`), Storage (uploads). Auth after the contest.
   Free tier is 500 MB: **chunk budget ~30,000 (8–10 textbooks)**, chosen to match the pre-generated topics; check
   the database size after each book and stop at ~350 MB; build the HNSW index after loading, not row by row.
-  **Migration `0005` (`halfvec`, `source_uri`, HNSW dropped) must be merged before bulk indexing**, or the whole library
-  is indexed twice; the HNSW index is rebuilt once loading finishes.
+  **Migration `0003` (`halfvec`) must be merged before bulk indexing**, or the whole library is indexed twice. It
+  changes `chunks.embedding` to `halfvec(1024)`, drops the HNSW index (rebuilt with `halfvec_cosine_ops` once loading
+  finishes) and renames `chunks.url` (from `0002`) to `source_uri`; the same PR updates `store.py` and `retrieve.py`
+  (`::halfvec(1024)` casts, `source_uri`).
   Fallback if the library must be bigger: Supabase Pro for one month. Every chunk stores `source_uri` (web URL, or the
   Supabase Storage path of an uploaded file) plus `page`, so the web app can open the original page of a citation.
 - **Embeddings:** BAAI/bge-m3 (1024 dims) served by a **TEI container** on the API VM (P2 deploys it in H0–H2; the
@@ -121,8 +123,8 @@ the backup VM stays stopped until needed.
   service-account credentials shared only through a password manager; first draft of `app/schemas.py`.
 - P4: pick the 2–3 golden topics (match the pre-generated list) and gather their source pages.
 - P1: name **P2 as deputy lead** (decides while P1 sleeps); agree the sleep slots below with everyone.
-- **Only if pre-contest code is allowed (3):** P1 drafts `app/schemas.py` (H1 becomes a review) and migration `0005`; P2
-  switches `conftest.py` to a throwaway schema and merges `0005`; **if (2) is also "yes"**, P3 downloads the library
+- **Only if pre-contest code is allowed (3):** P1 drafts `app/schemas.py` (H1 becomes a review) and migration `0003`; P2
+  switches `conftest.py` to a throwaway schema and merges `0003`; **if (2) is also "yes"**, P3 downloads the library
   and P2 indexes it, so H3–H7 only checks size and retrieval quality.
 - Everyone: Git, Python 3.12, `uv`, their AI coding agent; own Supabase dev project (for running tests) and keys in
   `.env`. Laptops need no GPU and no Docker; 8 GB RAM is enough, 16 GB is comfortable; keep a few GB of disk free.
@@ -217,7 +219,7 @@ return `gap_slug`. BKT keeps updating mastery after every later attempt.
 
 ### DecisionTrace (P1 defines in `app/engine/trace.py`; P5 renders)
 `{kind, concept_slug, at, prior, evidence: {item_id?, correct?, misconception?, slip?, guess?}, posterior, rule, rule_vi,
-alternatives: [{concept_slug, p_known, why_not_vi}]}` — pure data from the engine, stored per learner (migration `0003`,
+alternatives: [{concept_slug, p_known, why_not_vi}]}` — pure data from the engine, stored per learner (migration `0004`,
 via P2's services), returned by `/placement/next` and `/attempts`, shown in the web app's "Vì sao?" panel. `bkt.update`
 and `srs.review` stay unchanged; traced wrappers (`update_traced`, `review_traced`) and `graph.root_cause` /
 `placement.next_question` return `(result, trace)`.
@@ -237,16 +239,16 @@ objectives; everything cited; answerability-checked items.
 ## Timeline (H0 = kickoff)
 | Window | P1 Lead + ML core | P2 Platform | P3 Agents & integration | P4 Content & tutor | P5 Web |
 |---|---|---|---|---|---|
-| **H0–H1** | **Draft contracts** (`schemas.py`, YAML formats, `DecisionTrace`); migration `0005` (`halfvec`, `source_uri`); one-page engine spec in `specs/engine/` | **Throwaway-schema `conftest.py` first** (everyone runs tests from H1); repo, CI, FastAPI skeleton, schema on Supabase, **merge P1's migration `0005`**, Spec Kit setup; start the GPU VM | Allowlist + downloader/HTML reader; gateway skeleton (own folders) | **Golden topic #1** (chunks, graph, ~15 items) | Next.js skeleton, Sena assets |
+| **H0–H1** | **Draft contracts** (`schemas.py`, YAML formats, `DecisionTrace`); migration `0003` (`halfvec`, `url` → `source_uri`); one-page engine spec in `specs/engine/` | **Throwaway-schema `conftest.py` first** (everyone runs tests from H1); repo, CI, FastAPI skeleton, schema on Supabase, **review and merge P1's migration `0003`**, Spec Kit setup; start the GPU VM | Allowlist + downloader/HTML reader; gateway skeleton (own folders) | **Golden topic #1** (chunks, graph, ~15 items) | Next.js skeleton, Sena assets |
 | **H1–H3** | BKT/FSRS traced wrappers, `graph.py`; retrieval on golden topic #1 | API stubs from the contracts; **TEI container serving bge-m3** (H2); tunnel, Watchtower, backup VM image | **Library download starts** (priority order, H1–H5); first Vertex AI call through the gateway; file reader | **Golden topics #2–3**; graph-generation prompt on a sample chapter | Map + "Vì sao?" panel on **mock JSON** |
-| **H3** checkpoint | Contracts frozen; golden topics 1–2 ready; engine and UI tested on real data; bge-m3 measured on the VM; migration `0005` merged; first books downloaded | | | | |
+| **H3** checkpoint | Contracts frozen; golden topics 1–2 ready; engine and UI tested on real data; bge-m3 measured on the VM; migration `0003` merged; first books downloaded | | | | |
 | **H3–H7** | `placement.py`, `DecisionTrace` everywhere; retrieval evaluation on golden topic #1 only | **Library indexing** on the indexing GPU VM with P1's code (H5–H7), size check, HNSW after load; `topic_jobs` queue + worker + SSE with heartbeat; database layer; structlog + Langfuse | **Bedrock call through the gateway (by H5)**; library download done (H5); grading; real routes for topics, graph, placement, attempts, uploads; Nhanh mode wiring | Pipeline graph → items; verification gate (Bedrock verifier; OpenRouter fallback of another family) | Topic input + upload, map, learning screen; switch to real routes as they land |
-| **H7** integration | P3, P4, P5 pieces due at H8 are merged. **H7–H8: first end-to-end run of Nhanh** (P1 leads, everyone fixes) | | | | |
+| **H7** integration | P1, P3, P4, P5 pieces due at H8 are merged (P1: `placement.py`, `retrieve.py`). **H7–H8: first end-to-end run of Nhanh** (P1 leads, everyone fixes) | | | | |
 | **H8** checkpoint | Nhanh end to end on **3 unfamiliar topics** (if the library is not indexed yet, use 3 uploaded files instead). Library indexed, DB < 350 MB; migrations `0003`–`0007` merged; Bedrock reachable; Nhanh time measured. Not solid → whole team on Nhanh + pre-generated topics; Deep Research becomes a bonus. Pick Free/Pro models from the Vietnamese test. P1 decides on the reranker. | | | | |
 | **H8–H11** | Root-cause remediation rules; reranker if needed; engine tests on varied graph shapes; retrieval evaluation on the other golden topics | Integration, dashboard, deploy hardening | Deep Research agent; routes for tutor, ask, reviews, exam-plan, next-item | Tutor prompts + hint ladder; quality across subject types | Research-trail + tutor screens, Free/Pro switch |
 | **H11–H12** | Everyone plays judge with an unfamiliar topic; measure time + cost per mode (nobody sleeps) | | | | |
 | **H12** | P1 decides: Deep Research live on stage, or shown as a recording | | | | |
-| **H12–H18** | Metrics review with P4; tutor evaluation ≥ 18/20 with P4; algorithm part of the pitch. Sleep H12:30–H14:00 | Pre-generate topics, monitoring; deputy lead while P1 sleeps. Sleep H16:00–H17:30 | Fixes. Sleep H13:30–H15:00 | Label 50 items + 20 hints in **H15–H16** (whole team, nobody sleeps), run `guardrails/metrics.py`. Sleep H16:00–H17:30 | Polish, manual E2E checklist. Sleep H12:30–H14:00 |
+| **H12–H18** | Metrics review with P4; tutor evaluation ≥ 18/20 with P4; algorithm part of the pitch. Sleep H12:00–H13:30 | Pre-generate topics, monitoring; deputy lead while P1 sleeps. Sleep H16:00–H17:30 | Fixes. Sleep H13:30–H15:00 | Label 50 items + 20 hints in **H15–H16** (whole team, nobody sleeps), run `guardrails/metrics.py`. Sleep H13:30–H15:00 | Polish, manual E2E checklist. Sleep H12:00–H13:30 |
 | **H18** freeze | Tag `demo-v1` (P2) | | | | |
 | **H18–H23** | Demo script + pitch; 3 clean runs with unseen topics, timed to the research | | | | **Backup video** |
 | **H23–H24** | Buffer | | | | |
@@ -255,17 +257,22 @@ objectives; everything cited; answerability-checked items.
 `POST /placement/next`, `POST /attempts`. **Stubs allowed until H11:** `/tutor/hint`, `/ask`, `/next-item`,
 `/reviews/due`, `/exam-plan`.
 
-**Sleep:** about 90 min each inside H12–H18, at the slots above. At most two people asleep at once, never two who are
-waiting on each other; nobody sleeps during H11–H12, the H12 decision, the labelling hour (H15–H16) or H17:30–H18.
-While P1 sleeps, **P2 decides**; while P2 sleeps, P3 watches the VM and merges green PRs.
+**Sleep:** about 90 min each inside H12–H18, in three back-to-back blocks so no more than two people are ever asleep:
+P1 + P5 H12:00–H13:30 (right after the H12 decision), P3 + P4 H13:30–H15:00, P2 H16:00–H17:30. Never two who are
+waiting on each other; nobody sleeps during H11–H12, the labelling hour (H15–H16) or H17:30–H18. While P1 sleeps,
+**P2 decides**; while P3 sleeps, P2 handles route bugs; while P4 sleeps, P1 covers content questions; while P2 sleeps,
+P3 watches the VM and merges green PRs.
 
 ## Git workflow
 - Branch per lane: `p1/ml-core`, `p2/platform`, `p3/integration`, `p4/content`, `p5/web`; one worktree per extra agent.
 - **Rebase at every checkpoint**: `git fetch && git rebase origin/main`, then run tests.
 - PR title `[P3] ...`; CI green; P2 merges routine PRs, P1 approves contract changes. Stacked PRs: **retarget to `main`
   before deleting the base branch**.
-- Migrations reserved: `0003` P1 (`decision_traces`), `0004` P4 (`items.chunk_ids`, `items.status`), `0005` P1
-  (`halfvec`, `chunks.source_uri`), `0006` P2 (`topic_jobs`, `llm_calls`), `0007` P3 (uploads). Additive only; P2 merges them in order.
+- Migrations reserved, numbered in merge order: `0003` P1 (`halfvec`, `chunks.url` → `source_uri`, HNSW rebuilt),
+  `0004` P1 (`decision_traces`), `0005` P4 (`items.chunk_ids`, `items.status`), `0006` P2 (`topic_jobs`, `llm_calls`),
+  `0007` P3 (uploads). `supabase/migrations/` belongs to P2, but **each reserved file is written by its lane and reviewed
+  and merged by P2** (the one exception to lane-owned paths). Additive only, except `0003` (type change, rename, index
+  rebuild). P2 merges them in number order, so every database (demo, CI, dev) applies them in the same order.
 - Dependencies via `uv add` / `pnpm add` in your own PR; on lockfile conflicts take `main`'s and re-lock.
 - **Secrets:** each person has their own Supabase dev project and keys in `.env`. Demo keys only via a password manager.
 

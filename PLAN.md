@@ -6,7 +6,7 @@ integration run H7–H8, feature freeze at H18). Milestones:
 
 | Hour | Milestone |
 |---|---|
-| H3 | Repo, CI (throwaway-schema tests), schema + migration `0005`, contracts + API stubs, cloud GPU VM + tunnel, bge-m3 measured, first Vertex AI call, library download started |
+| H3 | Repo, CI (throwaway-schema tests), schema + migration `0003` (`halfvec`), contracts + API stubs, cloud GPU VM + tunnel, bge-m3 measured, first Vertex AI call, library download started |
 | H5 | Library downloaded; Bedrock reachable through the gateway |
 | H7 | Pieces due at H8 merged; library indexed; first end-to-end Nhanh run |
 | H8 | Nhanh mode end to end on 3 unfamiliar topics; Free/Pro models chosen; migrations `0003`–`0007` merged |
