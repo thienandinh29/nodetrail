@@ -10,7 +10,7 @@ Planned entries are marked _(planned)_ until they exist.
 | `PLAN.md` | Phased build plan and current status |
 | `TEAM.md` | 24-hour team plan: lanes, owned paths, stack, contracts, timeline, git workflow, risks |
 | `specs/` _(planned)_ | GitHub Spec Kit: one folder per feature (spec, plan, tasks) |
-| `docker/` _(planned, P2)_ | API image, compose for the cloud VM (API + worker, Watchtower, named Cloudflare Tunnel), VM setup script |
+| `docker/` _(planned, P2)_ | API image, compose for the cloud VM (API + worker + TEI for bge-m3, Watchtower, named Cloudflare Tunnel), VM setup script |
 | `context/product-brief.vi.md` | Original product brief (Vietnamese) |
 | `context/` | Reference material: research, textbook notes, algorithm papers |
 | `outputs/` | Generated deliverables, not source code |
@@ -36,7 +36,7 @@ Planned entries are marked _(planned)_ until they exist.
 | `data/golden/` _(planned, P4)_ | 2–3 hand-checked golden topics (chunks, graph, items): test data, labelled sample, demo fallback |
 | `apps/api/app/jobs/` _(planned, P2)_ | `topic_jobs` queue in Postgres, background worker, SSE progress with heartbeat |
 | `apps/api/app/observability/` _(planned, P2)_ | structlog + Langfuse setup (OpenTelemetry, Sentry after the contest) |
-| `apps/api/app/rag/` | `notebook.py` (ipynb → chunks), `embed.py` (bge-m3, optional `embed` extra), `store.py`, `ingest.py` CLI; `retrieve.py` and optional `rerank.py` planned (P1) |
+| `apps/api/app/rag/` | `notebook.py` (ipynb → chunks), `embed.py` (bge-m3; TEI client and managed-API fallback planned), `store.py`, `ingest.py` CLI; `retrieve.py` and optional `rerank.py` planned (P1) |
 | `data/raw/thinkpython/` | Downloaded Think Python 3e notebooks + `SOURCE_SHA` (git-ignored; re-download to rebuild) |
 | `apps/api/app/llm/` _(planned, P3)_ | LLM gateway (Vertex AI, Bedrock, OpenRouter adapters) + `routing.yaml` (tier × task → ordered provider:model list) |
 | `data/sources/` _(planned, P3)_ | Allowlist of open-education sites + library manifest |

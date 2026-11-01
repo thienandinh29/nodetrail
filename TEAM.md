@@ -21,11 +21,11 @@ was cut to 3 minutes). If (3) is "no", start a fresh repo with this same plan; (
 
 | Person | Lane | Owns (only edits these) | Delivers |
 |---|---|---|---|
-| **P1** (lead, ML/AI engineer; 2 agents: retrieval + engine) | Lead + ML core | `app/schemas.py` (contracts), `app/engine/` (`bkt.py`, `srs.py`, `graph.py`, `placement.py`, `trace.py`), `app/rag/` (`embed.py`, `retrieve.py`, `rerank.py`, `notebook.py`, `store.py`, `ingest.py`), `data/eval/`, `tests/engine/`, `tests/rag/`, `CLAUDE.md`, `TEAM.md`, `SPEC.md`, `PLAN.md`, `MAP.md` | Contracts (draft H1, frozen H3); **retrieval**: bge-m3 model code, cited retrieval, optional reranker, retrieval evaluation, library indexing scripts; **learner model**: BKT/FSRS (traced), root-cause tracing, graph-walk placement, `DecisionTrace`; **evaluation design** for guardrail metrics and the H8 model test; H8/H12 decisions; the algorithm part of the pitch. **No server or Docker work.** |
-| **P2** (backend/DevOps; 2 agents: infra + services) | Platform | `apps/api/app/main.py`, `app/api/__init__.py`, `app/config.py`, `app/db.py`, `app/services/` (database layer), `app/jobs/`, `app/observability/`, `supabase/migrations/`, `apps/api/tests/conftest.py`, `scripts/seed.py`, `scripts/pregenerate.py`, `docker/`, `.github/`, `pyproject.toml`/`uv.lock`, `specs/` setup | Repo, CI, Spec Kit setup; API stubs from P1's contracts by H3; **GPU VM + AWS backup VM**, Docker, named Cloudflare Tunnel, GHCR/Watchtower deploy, budget alerts; **bge-m3 serving container + `/internal/embed`** (H0–H2) and the temporary indexing GPU VM; `topic_jobs` queue + worker + SSE; structlog + Langfuse; database layer (attempts, mastery, traces, review cards); tests on a throwaway schema per run; merging green PRs; pre-generated topics |
-| **P3** (backend) | Agents & integration | `app/research/`, `app/uploads/`, `app/llm/`, `app/graders/`, `app/api/learn.py`, `app/api/tutor.py`, `app/api/topics.py`, `data/sources/`, `scripts/build_library.*`, `tests/research/`, `tests/uploads/`, `tests/llm/`, `tests/graders/`, `tests/api/` | Allowlist + textbook downloader/HTML reader (P1 indexes); **Deep Research agent**; uploaded-file reader (PDF/DOCX/link); **LLM gateway** (Vertex AI → Bedrock → OpenRouter, per-tier routing); MCQ grading; the **API routes** that connect P1's engine and retrieval, P2's database layer and P4's content/tutor to the web |
-| **P4** (careful, detail-oriented) | Content & tutor | `app/content/`, `app/guardrails/`, `app/tutor/`, `data/golden/`, `data/kg/`, `data/items/`, `data/guardrails/`, `tests/content/`, `tests/guardrails/`, `tests/tutor/` | **Golden topics first (H0–H3):** 2–3 hand-checked topics (source chunks, graph, ~15 items each) used as test data, labelled sample and demo fallback; content pipeline (sources → Knowledge Graph → MCQs with a misconception per wrong option); **verification gate**; `guardrails/metrics.py`; **Socratic tutor** prompts and hint ladder (Vietnamese, cited, never the final answer) |
-| **P5** (frontend/design) | Web app | `apps/web/`, `assets/sena/` | Next.js app on Vercel, built on **mock JSON from H1**: topic input + file upload, research-trail screen, knowledge map (React Flow + `dagre`), learning + tutor screens, **"Vì sao?" panel** rendering `DecisionTrace`, Free/Pro switch, Vietnamese i18n, **backup video** |
+| **P1** (lead, ML/AI engineer; 2 agents: retrieval + engine) | Lead + ML core | `app/schemas.py` (contracts), `app/engine/` (`bkt.py`, `srs.py`, `graph.py`, `placement.py`, `trace.py`), `app/rag/` (`embed.py`, `retrieve.py`, `rerank.py`, `notebook.py`, `store.py`, `ingest.py`), `data/eval/`, `tests/engine/`, `tests/rag/`, `CLAUDE.md`, `TEAM.md`, `SPEC.md`, `PLAN.md`, `MAP.md` | Contracts (draft H1, frozen H3); **retrieval**: `embed.py` (TEI client + managed-API fallback), cited retrieval, optional reranker, retrieval evaluation, library indexing scripts, `source_uri` per chunk; **learner model**: BKT/FSRS (traced), root-cause tracing, graph-walk placement, `DecisionTrace`; **evaluation design** for guardrail metrics and the H8 model test; H8/H12 decisions; the algorithm part of the pitch. **No server or Docker work.** |
+| **P2** (backend/DevOps; 2 agents: infra + services) | Platform | `apps/api/app/main.py`, `app/api/__init__.py`, `app/config.py`, `app/db.py`, `app/services/` (database layer), `app/jobs/`, `app/observability/`, `supabase/migrations/`, `apps/api/tests/conftest.py`, `scripts/seed.py`, `scripts/pregenerate.py`, `docker/`, `.github/`, `pyproject.toml`/`uv.lock`, `specs/` setup | Repo, CI, Spec Kit setup; API stubs from P1's contracts by H3; **GPU VM + AWS backup VM**, Docker, named Cloudflare Tunnel, GHCR/Watchtower deploy, budget alerts; **TEI container serving bge-m3** (and the reranker if used) on the VM (H0–H2) and the temporary indexing GPU VM; `topic_jobs` queue + worker + SSE; structlog + Langfuse; database layer (attempts, mastery, traces, review cards); tests on a throwaway schema per run; merging green PRs; pre-generated topics |
+| **P3** (backend) | Agents & integration | `app/research/`, `app/uploads/`, `app/llm/`, `app/graders/`, `app/api/learn.py`, `app/api/tutor.py`, `app/api/topics.py`, `data/sources/`, `scripts/build_library.*`, `tests/research/`, `tests/uploads/`, `tests/llm/`, `tests/graders/`, `tests/api/` | Allowlist + textbook downloader/HTML reader (P1 indexes); **Deep Research agent**; uploaded-file reader (PDF/DOCX/link); **LLM gateway** (Vertex AI → Bedrock → OpenRouter, per-tier routing, model roles incl. the cross-family verifier rule); MCQ grading; the **API routes** that connect P1's engine and retrieval, P2's database layer and P4's content/tutor to the web |
+| **P4** (careful, detail-oriented) | Content & tutor | `app/content/`, `app/guardrails/`, `app/tutor/`, `data/golden/`, `data/kg/`, `data/items/`, `data/guardrails/`, `tests/content/`, `tests/guardrails/`, `tests/tutor/` | **Golden topics first (H0–H3):** 2–3 hand-checked topics (source chunks, graph, ~15 items each) used as test data, labelled sample and demo fallback; content pipeline (sources → Knowledge Graph via **long-context extraction with chunk-ID markers** → MCQs with a misconception per wrong option); **verification gate**; `guardrails/metrics.py`; **Socratic tutor** prompts and hint ladder (Vietnamese, cited, never the final answer) |
+| **P5** (frontend/design) | Web app | `apps/web/`, `assets/sena/` | Next.js app on Vercel, built on **mock JSON from H1**: topic input + file upload, research-trail screen, knowledge map (React Flow + `dagre`), learning + tutor screens, **"Vì sao?" panel** rendering `DecisionTrace`, "open source page" on citations (`source_uri` + page), Free/Pro switch, Vietnamese i18n, **backup video** |
 
 ## Stack (decided; changes go through P1)
 - **Web:** Next.js (App Router, TypeScript strict), Tailwind + shadcn/ui, React Flow with **`dagre` auto-layout
@@ -43,9 +43,9 @@ was cut to 3 minutes). If (3) is "no", start a fresh repo with this same plan; (
   `docker compose pull && docker compose up -d`. P2 keeps a VM setup script (Docker, NVIDIA Container Toolkit,
   GHCR login, cloudflared, Watchtower) so the backup VM can be rebuilt in minutes.
 - **Image (P2):** multi-stage build with `uv`: dependencies in a stable layer, `src/` copied last, so a normal merge pulls
-  only a few MB. **bge-m3 weights are never in the image**: they live on the VM disk and are bind-mounted
-  (`/models/bge-m3:/app/models/bge-m3`). A CPU-only VM uses an ONNX Runtime image (no PyTorch); the GPU VM uses a
-  separate GPU image.
+  only a few MB. The API image has **no ML runtime** (no PyTorch/ONNX): bge-m3 runs in the separate **TEI container**
+  (Hugging Face Text Embeddings Inference), whose weights live on the VM disk and are bind-mounted
+  (`/models/bge-m3:/data`). TEI has GPU and CPU images; a CPU-only VM uses the CPU image.
 - **Jobs (24 h, P2):** a `topic_jobs` table in Postgres is the queue. The worker is a **separate compose service** from
   the same image (`command: python -m app.worker`), never inside uvicorn; it claims jobs with
   `SELECT … FOR UPDATE SKIP LOCKED`. Deep Research runs 3–8 min, never inside a request. Redis + `arq` after the contest.
@@ -55,17 +55,27 @@ was cut to 3 minutes). If (3) is "no", start a fresh repo with this same plan; (
 - **Data:** Supabase cloud — Postgres + pgvector (`halfvec`), Storage (uploads). Auth after the contest.
   Free tier is 500 MB: **chunk budget ~30,000 (8–10 textbooks)**, chosen to match the pre-generated topics; check
   the database size after each book and stop at ~350 MB; build the HNSW index after loading, not row by row.
-  Fallback if the library must be bigger: Supabase Pro for one month.
-- **Embeddings:** BAAI/bge-m3 (1024 dims). **P1 writes the model and retrieval code** (`embed.py`, `retrieve.py`);
-  **P2 runs it** — the serving container on the API VM (GPU, or ONNX int8 if no GPU quota) and the short-lived GPU VM
-  for bulk indexing (deleted right after; Colab as fallback). Hugging Face hosted bge-m3 as backup. **Only the API
-  process holds the model**; the worker calls the API's internal `POST /internal/embed` on localhost instead of loading a
-  second copy. Encoding runs via `await asyncio.to_thread(...)` so it never blocks the event loop.
+  Fallback if the library must be bigger: Supabase Pro for one month. Every chunk stores `source_uri` (web URL, or the
+  Supabase Storage path of an uploaded file) plus `page`, so the web app can open the original page of a citation.
+- **Embeddings:** BAAI/bge-m3 (1024 dims) served by a **TEI container** on the API VM (P2 deploys it in H0–H2; the
+  reranker `bge-reranker-v2-m3` can run in a second TEI container if P1 decides at H8). **Only TEI holds the model**;
+  the API and the worker both call it over HTTP on the VM (`TEI_URL`), with an async client so the event loop is never
+  blocked. **P1 writes `embed.py` and `retrieve.py`** against TEI. Bulk indexing runs the same TEI image on a
+  short-lived GPU VM (deleted right after; Colab as fallback). Fallbacks: Hugging Face hosted bge-m3, or a managed
+  multilingual embedding API on Bedrock/Vertex (e.g. a 1024-dim multilingual model) selected by `EMBEDDING_BACKEND` —
+  **a different model means incompatible vectors, so switching requires re-indexing the library.**
 - **LLM (P3):** one gateway, `app/llm/`, with provider adapters: **Vertex AI (primary, on credits)**, **Bedrock**, and
   **OpenRouter** (last fallback). `app/llm/routing.yaml` maps (tier, task) → an ordered list of `provider:model`; the
   gateway tries them in order on errors or rate limits. **free** = cheap models (e.g. Gemini Flash on Vertex), Nhanh mode
   only, no web search; **pro** = strong models (e.g. Claude on Vertex or Bedrock) + Deep Research. Exact model IDs chosen
   after the H8 Vietnamese quality test (designed by P1). On OpenRouter avoid `:free` model variants (rate limits).
+  **Model roles:**
+  - *Graph extraction / Deep Research reading:* a long-context Gemini model on Vertex reads a whole textbook or chapter
+    set in one call; the text is sent **with chunk-ID markers** and every concept must cite them.
+  - *Verifier (verification gate):* **always a different model family from the generator** (e.g. Gemini generates,
+    Claude on Bedrock verifies), so a model never grades its own output (self-preference bias). Enforced in
+    `routing.yaml`.
+  - *Socratic tutor:* Pro = Claude on Bedrock, Free = a cheap model; confirmed or changed by the H8 Vietnamese test.
 - **Observability (24 h, P2):** `structlog` JSON logs (`request_id`, `topic_id`, `tier`) + Langfuse for every LLM call
   (model, latency, cost); the Langfuse dashboard is shown at the end of the demo. After the contest:
   OpenTelemetry → Grafana Cloud, Sentry.
@@ -85,7 +95,7 @@ was cut to 3 minutes). If (3) is "no", start a fresh repo with this same plan; (
 | RAM | 16 GB | 32 GB |
 | Disk | 50 GB SSD (images + bge-m3 weights) | 50 GB SSD |
 | OS | Ubuntu 22.04/24.04 + NVIDIA driver + NVIDIA Container Toolkit | Ubuntu 22.04/24.04 |
-| bge-m3 | full model on GPU | ONNX int8 |
+| bge-m3 | TEI GPU image | TEI CPU image |
 | Region | Singapore | Singapore |
 
 Acceptance at H3: query embedding < ~1 s per Vietnamese question on the VM. Bulk-indexing GPU VM is deleted after use;
@@ -166,7 +176,8 @@ Route owner = who writes the endpoint; logic comes from the lanes in brackets.
 `item` sent to the web never contains the answer: `{id, kind, prompt_vi, options: [{label}]}`.
 
 ### Python interfaces
-- `app/rag/embed.py::Embedder.embed(texts) -> list[list[float]]` (P1; exists; add ONNX/GPU/hosted implementations).
+- `app/rag/embed.py::Embedder.embed(texts) -> list[list[float]]` (P1; exists; add TEI, managed-API and HF-hosted
+  implementations; the managed API needs a re-index).
 - `app/rag/retrieve.py::search(query, subject, k=5) -> list[Citation]` (P1).
 - `app/rag/rerank.py` (P1, optional): rerank retrieved chunks (e.g. `bge-reranker-v2-m3`); only if H8 retrieval is weak.
 - `app/llm/gateway.py::complete(task, tier, system, messages, schema=None) -> str | BaseModel` (P3) — reads
@@ -214,7 +225,7 @@ objectives; everything cited; answerability-checked items.
 | Window | P1 Lead + ML core | P2 Platform | P3 Agents & integration | P4 Content & tutor | P5 Web |
 |---|---|---|---|---|---|
 | **H0–H1** | **Draft contracts** (`schemas.py`, YAML formats, `DecisionTrace`); engine specs in `specs/engine/` | Repo, CI, FastAPI skeleton, schema on Supabase, Spec Kit setup; start the GPU VM | Allowlist + HTML reader; gateway skeleton (own folders) | **Golden topic #1** (chunks, graph, ~15 items) | Next.js skeleton, Sena assets |
-| **H1–H3** | BKT/FSRS traced wrappers, `graph.py`; retrieval on golden topic #1 | API stubs from the contracts; **bge-m3 container + `/internal/embed`**; tunnel, Watchtower, backup VM image; tests on a throwaway schema per run | First Vertex AI call through the gateway; file reader | **Golden topics #2–3**; graph-generation prompt on a sample chapter | Map + "Vì sao?" panel on **mock JSON** |
+| **H1–H3** | BKT/FSRS traced wrappers, `graph.py`; retrieval on golden topic #1 | API stubs from the contracts; **TEI container serving bge-m3**; tunnel, Watchtower, backup VM image; tests on a throwaway schema per run | First Vertex AI call through the gateway; file reader | **Golden topics #2–3**; graph-generation prompt on a sample chapter | Map + "Vì sao?" panel on **mock JSON** |
 | **H3** checkpoint | Contracts frozen; golden topics 1–2 ready; engine and UI tested on real data; bge-m3 measured on the VM | | | | |
 | **H3–H8** | `placement.py`, `DecisionTrace` everywhere; retrieval evaluation on golden topics; library indexing (P2 runs the GPU VM) | structlog + Langfuse; `topic_jobs` queue + worker + SSE with heartbeat; database layer | Grading; routes for graph, placement, attempts, ask; uploads; Nhanh mode wiring | Pipeline graph → items; verification gate | Topic input + upload, map, learning screen on stubs |
 | **H8** checkpoint | Nhanh end to end on **3 unfamiliar topics**. Not solid → whole team on Nhanh + pre-generated topics; Deep Research becomes a bonus. Pick Free/Pro models from the Vietnamese test. P1 decides on the reranker from the retrieval evaluation. | | | | |
@@ -232,7 +243,7 @@ objectives; everything cited; answerability-checked items.
 - PR title `[P3] ...`; CI green; P2 merges routine PRs, P1 approves contract changes. Stacked PRs: **retarget to `main`
   before deleting the base branch**.
 - Migrations reserved: `0003` P1 (`decision_traces`), `0004` P4 (`items.chunk_ids`, `items.status`), `0005` P1
-  (`halfvec`), `0006` P2 (`topic_jobs`, `llm_calls`), `0007` P3 (uploads). Additive only; P2 merges them in order.
+  (`halfvec`, `chunks.source_uri`), `0006` P2 (`topic_jobs`, `llm_calls`), `0007` P3 (uploads). Additive only; P2 merges them in order.
 - Dependencies via `uv add` / `pnpm add` in your own PR; on lockfile conflicts take `main`'s and re-lock.
 - **Secrets:** each person has their own Supabase dev project and keys in `.env`. Demo keys only via a password manager.
 
@@ -256,18 +267,19 @@ explanations cited; contract shapes exact; `MAP.md` updated.
 | Contracts late past H1 / foundation late past H3 | Lanes keep working on golden topics, mock JSON and their own folders; P1 does nothing but contracts in H0–H1 | P1, P2 |
 | Tunnel URL changes or SSE stream drops mid-research | Named tunnel on own domain; heartbeat every 15–20 s; web reconnects and reloads `GET /topics/{id}` | P2, P5 |
 | Primary VM down | Start the backup VM on the other cloud (same image + compose + tunnel token); `/health` check; Render/Railway last resort | P2 |
-| GPU quota not approved before H0 | CPU VM (8 vCPU / 32 GB) with ONNX int8; swap primary cloud if the other approves first | P2, P1 |
+| GPU quota not approved before H0 | CPU VM (8 vCPU / 32 GB) with the TEI CPU image; swap primary cloud if the other approves first | P2, P1 |
 | Cloud credits burn (GPU VM left running) | Budget alerts on both clouds; delete the indexing VM right after use; backup VM stays stopped | P2 |
 | Vertex model access missing or rate-limited | Gateway falls through to Bedrock, then OpenRouter (`routing.yaml` order) | P3 |
-| bge-m3 too slow on the VM | ONNX int8 → HF hosted → multilingual embedding API + re-index | P1, P2 |
-| Docker image too heavy (10–20 min per update) | Weights bind-mounted from the VM disk; multi-stage `uv` build; ONNX image on CPU VMs | P2 |
+| bge-m3 too slow, or TEI / GPU driver fails | TEI CPU image → HF hosted bge-m3 → managed multilingual embedding API on Bedrock/Vertex (**requires re-indexing**) | P1, P2 |
+| Long-context graph extraction too slow or costly | Fall back to chapter-by-chapter extraction with the same chunk-ID markers | P4, P3 |
+| Docker image too heavy (10–20 min per update) | API image has no ML runtime; bge-m3 weights mounted into the TEI container; multi-stage `uv` build | P2 |
 | Network blocks QUIC/UDP, tunnel won't connect | `cloudflared --protocol http2`; `restart: unless-stopped` | P2 |
-| bge-m3 loaded twice (API + worker), VM runs out of RAM | Only the API holds the model; worker uses `/internal/embed`; measure RAM at H3 | P2, P1 |
+| VM runs out of RAM or GPU memory | Only TEI holds the model (API and worker call it over HTTP); measure memory at H3 | P2, P1 |
 | Database exceeds Supabase free tier | `halfvec`, ~30k-chunk budget, size check per book, HNSW after load; Supabase Pro for a month | P1 |
 | Knowledge-map nodes overlap | `dagre`/`elkjs` auto-layout from H0; test shallow/deep and small/large graphs | P5 |
 | Deep Research slow, wrong or off-allowlist | 8-min cap → Nhanh → pre-generated topic; domain filter in code | P3, P4, P2 |
 | Judge picks a topic with no open textbook | Wikibooks/Wikipedia labelled as encyclopedia; state the limit openly | P3 |
-| Generated question wrong in front of judges | Verification gate on every item and hint, measured error rate from `metrics.py`, "Bản nháp tự động" label, rehearse many subject types | P4 |
+| Generated question wrong in front of judges | Verification gate on every item and hint (verifier from a different model family), measured error rate from `metrics.py`, "Bản nháp tự động" label, rehearse many subject types | P4 |
 | Cheap model returns bad JSON or weak Vietnamese | Pydantic validation + retry, fallback model list, H8 Vietnamese test | P3, P1 |
 | Engine/UI only works for one graph shape | Test shallow/deep, small/large graphs (golden topics differ on purpose); vary topics at every checkpoint | P1, P5 |
 | Uploaded file is scanned, table-heavy or has broken fonts | Check text on upload, ask for another file or link, page cap, rehearse with 5–10 real files | P3 |

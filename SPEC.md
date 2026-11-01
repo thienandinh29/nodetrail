@@ -46,6 +46,8 @@ A two-step pipeline for every generated question:
 1. **Generator** writes the item and cites the `chunk_id`s it is based on.
 2. **Verifier** receives **only the text of those chunks** (no other context, no answer key), tries to answer the item
    blind, and its answer is compared with the key.
+The verifier is **always a different model family from the generator** (e.g. Gemini generates, Claude verifies), so a
+model never grades its own output (self-preference bias).
 Unanswerable or mismatched → `status = needs_review` and the item is **not served**; only `verified` items reach
 learners. Tutor hints go through the same check against their cited chunks before display. Pass/fail counts feed
 `guardrails/metrics.py`, next to the error rate measured on the human-labelled sample.
