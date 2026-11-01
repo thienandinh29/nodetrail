@@ -19,8 +19,8 @@ was cut to 3 minutes). If (3) is "no", start a fresh repo with this same plan; (
 
 | Person | Lane | Owns (only edits these) | Delivers |
 |---|---|---|---|
-| **P1** (lead) | Platform, infra, integration (2 agents: infra + integration) | `apps/api/app/main.py`, `app/schemas.py`, `app/api/__init__.py`, `app/config.py`, `app/db.py`, `app/jobs/`, `app/observability/`, `supabase/migrations/`, `apps/api/tests/conftest.py`, `scripts/seed.py`, `scripts/pregenerate.py`, `docker/`, `.github/`, `pyproject.toml`/`uv.lock`, `CLAUDE.md`, `TEAM.md`, `PLAN.md`, `MAP.md`, `specs/` setup | Supabase, contracts + API stubs, `topic_jobs` queue + worker, structlog + Langfuse, Docker + named Cloudflare Tunnel + GHCR/Watchtower deploy, merges, pre-generated topics, end-to-end runs, demo script |
-| **P2** | Sources, research, retrieval (2 agents: research + retrieval) | `app/rag/`, `app/llm/`, `app/research/`, `app/uploads/`, `data/sources/`, `scripts/build_library.*`, `tests/rag/`, `tests/research/`, `tests/uploads/`, `data/eval/` | Allowlist, library of 8–10 open textbooks (~30k chunks, Nhanh mode), Deep Research agent, uploaded-file reader (PDF/DOCX/link), bge-m3 embeddings, cited retrieval, OpenRouter gateway with per-tier routing |
+| **P1** (lead) | Platform, infra, integration (2 agents: infra + integration) | `apps/api/app/main.py`, `app/schemas.py`, `app/api/__init__.py`, `app/config.py`, `app/db.py`, `app/jobs/`, `app/observability/`, `supabase/migrations/`, `apps/api/tests/conftest.py`, `scripts/seed.py`, `scripts/pregenerate.py`, `docker/`, `.github/`, `pyproject.toml`/`uv.lock`, `CLAUDE.md`, `TEAM.md`, `PLAN.md`, `MAP.md`, `specs/` setup | Supabase, contracts + API stubs, `topic_jobs` queue + worker, structlog + Langfuse, Google Cloud GPU VM + AWS backup VM, Docker + named Cloudflare Tunnel + GHCR/Watchtower deploy, budget alerts, merges, pre-generated topics, end-to-end runs, demo script |
+| **P2** | Sources, research, retrieval (2 agents: research + retrieval) | `app/rag/`, `app/llm/`, `app/research/`, `app/uploads/`, `data/sources/`, `scripts/build_library.*`, `tests/rag/`, `tests/research/`, `tests/uploads/`, `data/eval/` | Allowlist, library of 8–10 open textbooks (~30k chunks, Nhanh mode), Deep Research agent, uploaded-file reader (PDF/DOCX/link), bge-m3 embeddings, cited retrieval, LLM gateway (Vertex AI → Bedrock → OpenRouter) with per-tier routing |
 | **P3** | Content generation | `app/content/`, `data/kg/`, `data/items/`, `tests/content/` | Pipeline for any subject: sources → Knowledge Graph → MCQs with a misconception per wrong option → answerability check; validators (no cycles, everything cited) |
 | **P4** | Learning flow + tutor | `app/engine/` (new files), `app/graders/`, `app/services/`, `app/tutor/`, `app/api/learn.py`, `app/api/tutor.py`, `tests/engine/`, `tests/graders/`, `tests/services/`, `tests/tutor/` | MCQ grading, **graph-walk placement**, next-item selection, root-cause remediation, Socratic tutor (Vietnamese, cited, no final answers), mastery + review persistence, exam plan |
 | **P5** | Web app | `apps/web/`, `assets/sena/` | Next.js app on Vercel: topic input + file upload, research-trail screen, knowledge map (React Flow), learning + tutor screens, Free/Pro switch, Vietnamese i18n, **backup video** |
@@ -28,18 +28,21 @@ was cut to 3 minutes). If (3) is "no", start a fresh repo with this same plan; (
 ## Stack (decided; changes go through P1)
 - **Web:** Next.js (App Router, TypeScript strict), Tailwind + shadcn/ui, React Flow with **`dagre` auto-layout
   from H0** (never hand-computed x/y; every topic produces a differently shaped graph); deployed on **Vercel**.
-- **API:** Python 3.12, FastAPI, Pydantic v2, `uv`. Runs in Docker on a **teammate's machine**, exposed with a
-  **named Cloudflare Tunnel on the team's own domain** (never `trycloudflare.com`: its URL changes on every restart
-  and the web app would point at a dead address). Run `cloudflared` with `--protocol http2` (many school/venue
-  networks block QUIC/UDP); all containers use `restart: unless-stopped`. If the host machine is brought to the
-  venue, give it its own 4G/5G hotspot. The same image deploys to Render/Railway as fallback.
+- **Cloud (organizer credits):** **Google Cloud is primary, AWS is backup**; swap the roles if AWS approves GPU quota
+  first. Region: Singapore (`asia-southeast1` / `ap-southeast-1`), next to Supabase. Budget alerts on both accounts.
+- **API host:** Python 3.12, FastAPI, Pydantic v2, `uv`, in Docker on a **GPU VM** on the primary cloud (spec below).
+  The backup cloud keeps a **stopped VM with the same image and compose file**, started only if the primary fails.
+  Exposed with a **named Cloudflare Tunnel on the team's own domain** (never `trycloudflare.com`: its URL changes on
+  every restart and the web app would point at a dead address); `cloudflared` runs with `--protocol http2`. **The VM
+  opens no ports to the internet**; all traffic goes through the tunnel. All containers use `restart: unless-stopped`.
   CORS: the Vercel domain and `http://localhost:3000` from H0; shared API key between web and API.
 - **Deploy:** Vercel deploys the web app on merge to `main`. For the API, GitHub Actions builds the image and pushes
-  it to GHCR; **Watchtower** on the host pulls new images automatically. Manual fallback on the host:
-  `docker compose pull && docker compose up -d`.
+  it to GHCR; **Watchtower** on the VM pulls new images automatically. Manual fallback on the VM:
+  `docker compose pull && docker compose up -d`. P1 keeps a VM setup script (Docker, NVIDIA Container Toolkit,
+  GHCR login, cloudflared, Watchtower) so the backup VM can be rebuilt in minutes.
 - **Image:** multi-stage build with `uv`: dependencies in a stable layer, `src/` copied last, so a normal merge pulls
-  only a few MB. **bge-m3 weights are never in the image**: they live on the host and are bind-mounted
-  (`/models/bge-m3:/app/models/bge-m3`). CPU-only hosts use an ONNX Runtime image (no PyTorch); a GPU host gets a
+  only a few MB. **bge-m3 weights are never in the image**: they live on the VM disk and are bind-mounted
+  (`/models/bge-m3:/app/models/bge-m3`). A CPU-only VM uses an ONNX Runtime image (no PyTorch); the GPU VM uses a
   separate GPU image.
 - **Jobs (24 h):** a `topic_jobs` table in Postgres is the queue. The worker is a **separate compose service** from the
   same image (`command: python -m app.worker`), never inside uvicorn; it claims jobs with
@@ -51,13 +54,15 @@ was cut to 3 minutes). If (3) is "no", start a fresh repo with this same plan; (
   Free tier is 500 MB: **chunk budget ~30,000 (8–10 textbooks)**, chosen to match the pre-generated topics; check
   the database size after each book and stop at ~350 MB; build the HNSW index after loading, not row by row.
   Fallback if the library must be bigger: Supabase Pro for one month.
-- **Embeddings:** BAAI/bge-m3 (1024 dims). Bulk indexing on a free Colab/Kaggle GPU; query embeddings on the host
-  (GPU if available, ONNX int8 on CPU). Hugging Face hosted bge-m3 as backup. **Only the API process holds the
+- **Embeddings:** BAAI/bge-m3 (1024 dims). Bulk indexing on a **short-lived GPU VM** (delete it right after; Colab as
+  fallback); query embeddings on the API VM (GPU, or ONNX int8 if no GPU quota). Hugging Face hosted bge-m3 as backup. **Only the API process holds the
   model**; the worker calls the API's internal `POST /internal/embed` on localhost instead of loading a second copy.
   Encoding runs via `await asyncio.to_thread(...)` so it never blocks the event loop.
-- **LLM:** OpenRouter only, through `app/llm/`. Model per (tier, task) in `app/llm/routing.yaml`:
-  **free** = cheap models, Nhanh mode only, no web search; **pro** = strong models + Deep Research.
-  Exact model IDs chosen after the H8 Vietnamese quality test. Avoid `:free` model variants (rate limits).
+- **LLM:** one gateway, `app/llm/`, with provider adapters: **Vertex AI (primary, on credits)**, **Bedrock**, and
+  **OpenRouter** (last fallback). `app/llm/routing.yaml` maps (tier, task) → an ordered list of `provider:model`; the
+  gateway tries them in order on errors or rate limits. **free** = cheap models (e.g. Gemini Flash on Vertex), Nhanh mode
+  only, no web search; **pro** = strong models (e.g. Claude on Vertex or Bedrock) + Deep Research. Exact model IDs chosen
+  after the H8 Vietnamese quality test. On OpenRouter avoid `:free` model variants (rate limits).
 - **Observability (24 h):** `structlog` JSON logs (`request_id`, `topic_id`, `tier`) + Langfuse for every LLM call
   (model, latency, cost); the Langfuse dashboard is shown at the end of the demo. After the contest:
   OpenTelemetry → Grafana Cloud, Sentry.
@@ -67,23 +72,29 @@ was cut to 3 minutes). If (3) is "no", start a fresh repo with this same plan; (
 - **Typed web client:** P5 generates TypeScript types from FastAPI's OpenAPI with `openapi-typescript`, so a contract
   change breaks the web build instead of the demo.
 
-### Host machine requirements (check before H0)
-| | Minimum | Recommended |
+### API VM spec
+| | With GPU (recommended) | CPU only (no GPU quota yet) |
 |---|---|---|
-| RAM | 8 GB (ONNX int8 only, nothing else open) | 16 GB+ |
-| CPU | 4 cores, recent | 6–8 cores |
-| GPU | optional | NVIDIA, 4 GB+ VRAM |
-| Free disk | 15 GB | 30 GB |
-| Network | stable | wired, ≥ 10 Mbps upload |
-| Uptime | on for 24 h + demo day | plugged in; sleep and auto-restart off |
+| Machine | Google Cloud `g2-standard-4` (1× L4) or `n1-standard-4` + 1× T4; AWS `g4dn.xlarge` (1× T4) | 8 vCPU, 32 GB RAM |
+| RAM | 16 GB | 32 GB |
+| Disk | 50 GB SSD (images + bge-m3 weights) | 50 GB SSD |
+| OS | Ubuntu 22.04/24.04 + NVIDIA driver + NVIDIA Container Toolkit | Ubuntu 22.04/24.04 |
+| bge-m3 | full model on GPU | ONNX int8 |
+| Region | Singapore | Singapore |
 
-Acceptance at H3: query embedding < ~1 s per Vietnamese question on the host. Otherwise move the API to Render/Railway.
+Acceptance at H3: query embedding < ~1 s per Vietnamese question on the VM. Bulk-indexing GPU VM is deleted after use;
+the backup VM stays stopped until needed.
 
 ### Before H0 checklist
+- Lead, **today**: request GPU quota on **both** clouds (Singapore + one nearby region; new accounts often start at
+  zero and approval can take a day or more); enable Vertex AI and Bedrock and request model access (Claude on both,
+  Gemini on Vertex); set budget alerts on both; ask the organizers for the credit amount, end date, whether GPUs and
+  model access are included, and whether a card is required.
 - Lead: Cloudflare account + a cheap domain + a named tunnel on it; Vercel account linked to the repo; Supabase demo
-  project; OpenRouter key with a spending limit; members added as GitHub collaborators.
+  project; OpenRouter key with a spending limit (fallback only); members added as GitHub collaborators; cloud
+  service-account credentials shared only through a password manager.
 - Everyone: Git, Python 3.12, `uv`, their AI coding agent; own Supabase dev project and keys in `.env`.
-- P5: Node.js 20 + pnpm. Host machine: Docker, logged in to GHCR, `docker run hello-world` works.
+- P5: Node.js 20 + pnpm. P1: VM setup script tested (`docker run hello-world` works on the VM).
 
 ## Contracts (frozen at H3; only P1 changes them, announced at a checkpoint)
 
@@ -166,7 +177,7 @@ objectives; everything cited; answerability-checked items.
 | Window | P1 | P2 | P3 | P4 | P5 |
 |---|---|---|---|---|---|
 | **H0–H1** | Repo, CLAUDE/TEAM, CI, FastAPI skeleton, schema on Supabase, Spec Kit setup | Allowlist + HTML reader (own folder) | Graph/item formats + validators (own folder) | BKT module (own folder) | Next.js skeleton, Sena assets |
-| **H1–H3** | Contracts + API stubs, Docker + named tunnel + GHCR/Watchtower on host | Index 2–3 textbooks on Colab; **measure bge-m3 on the host** | Generate a graph from 1 sample chapter | FSRS wrapper + tests; placement design | Wire skeleton to API stubs |
+| **H1–H3** | Contracts + API stubs, primary GPU VM (Docker + named tunnel + GHCR/Watchtower), backup VM image | Index 2–3 textbooks on a temporary GPU VM; **measure bge-m3 on the API VM**; first Vertex AI call | Generate a graph from 1 sample chapter | FSRS wrapper + tests; placement design | Wire skeleton to API stubs |
 | **H3** checkpoint | Contracts frozen, foundation merged | | | | |
 | **H3–H8** | structlog + Langfuse; `topic_jobs` queue + worker + SSE with heartbeat | Retrieval + gateway + Nhanh mode; uploads | Pipeline graph → items → check | Grading, graph-walk placement, next item | Topic input + upload, map, learning screen |
 | **H8** checkpoint | Nhanh end to end on **3 unfamiliar topics**. Not solid → whole team on Nhanh + pre-generated topics; Deep Research becomes a bonus. Pick Free/Pro models from the Vietnamese test. | | | | |
@@ -204,10 +215,13 @@ explanations cited; contract shapes exact; `MAP.md` updated.
 |---|---|---|
 | Repo/contracts late past H3 | Lanes keep working in their own folders; P1 does nothing else in H0–H3 | P1 |
 | Tunnel URL changes or SSE stream drops mid-research | Named tunnel on own domain; heartbeat every 15–20 s; web reconnects and reloads `GET /topics/{id}` | P1, P5 |
-| Host machine off, asleep or offline | Sleep off, wired network, `/health` check; image ready for Render/Railway; API on the demo laptop at the venue | P1 |
+| Primary VM down | Start the backup VM on the other cloud (same image + compose + tunnel token); `/health` check; Render/Railway last resort | P1 |
+| GPU quota not approved before H0 | CPU VM (8 vCPU / 32 GB) with ONNX int8; swap primary cloud if the other approves first | P1, P2 |
+| Cloud credits burn (GPU VM left running) | Budget alerts on both clouds; delete the indexing VM right after use; backup VM stays stopped | P1 |
+| Vertex model access missing or rate-limited | Gateway falls through to Bedrock, then OpenRouter (`routing.yaml` order) | P2 |
 | bge-m3 too slow on the host | ONNX int8 → HF hosted → multilingual embedding API + re-index | P2 |
 | Docker image too heavy (10–20 min per update) | Weights bind-mounted from the host; multi-stage `uv` build; ONNX image on CPU hosts | P1 |
-| Network blocks QUIC/UDP, tunnel won't connect | `cloudflared --protocol http2`; `restart: unless-stopped`; own hotspot if the host is at the venue | P1 |
+| Network blocks QUIC/UDP, tunnel won't connect | `cloudflared --protocol http2`; `restart: unless-stopped` | P1 |
 | bge-m3 loaded twice (API + worker), host runs out of RAM | Only the API holds the model; worker uses `/internal/embed`; measure RAM at H3 | P1, P2 |
 | Database exceeds Supabase free tier | `halfvec`, ~30k-chunk budget, size check per book, HNSW after load; Supabase Pro for a month | P2 |
 | Knowledge-map nodes overlap | `dagre`/`elkjs` auto-layout from H0; test shallow/deep and small/large graphs | P5 |
@@ -217,7 +231,7 @@ explanations cited; contract shapes exact; `MAP.md` updated.
 | Cheap model returns bad JSON or weak Vietnamese | Pydantic validation + retry, fallback model list, H8 Vietnamese test | P2 |
 | Engine/UI only works for one graph shape | Test shallow/deep, small/large graphs; vary topics at every checkpoint | P4, P5 |
 | Uploaded file is scanned, table-heavy or has broken fonts | Check text on upload, ask for another file or link, page cap, rehearse with 5–10 real files | P2 |
-| LLM cost too high | Measure at H11; lower effort, fewer sources (lead decides); spending limit on OpenRouter | P1, P2 |
+| LLM cost too high | Measure at H11; lower effort, fewer sources (lead decides); budget alerts on both clouds, spending limit on OpenRouter | P1, P2 |
 | Web not ready at H18 | Scripted happy path only; backup video | P5 |
 | Venue wifi fails | Pre-generated topics + backup video | P1 |
 
