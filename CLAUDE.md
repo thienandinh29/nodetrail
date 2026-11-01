@@ -41,18 +41,18 @@ LLM is **not** the decision maker. It sits inside a harness:
 - Web: `apps/web` — Next.js App Router, TypeScript strict, Tailwind + shadcn/ui, React Flow + `dagre` auto-layout; Vercel.
 - API: `apps/api` — Python 3.12, FastAPI, Pydantic v2, uv; Docker on a GPU VM on Google Cloud (AWS backup VM, roles
   swappable), Singapore, via a named Cloudflare Tunnel (`--protocol http2`) on the team's domain; the VM opens no
-  ports. Multi-stage images from GHCR, auto-updated by Watchtower. Model weights live on the VM disk and are
-  bind-mounted, never baked into the image.
+  ports. Multi-stage images from GHCR, auto-updated by Watchtower. The API image has no ML runtime; bge-m3 runs in a
+  TEI container whose weights live on the VM disk.
 - Jobs: `topic_jobs` table in Postgres as the queue (`SELECT … FOR UPDATE SKIP LOCKED`); the worker is a separate
   compose service from the same image (Redis after the contest). Never long work inside a request; SSE progress
   with a heartbeat every 15–20 s.
 - Data: Supabase — Postgres + pgvector (`halfvec`), Storage; ~30k-chunk budget on the free tier.
   Migrations in `supabase/migrations/`.
-- Embeddings: BAAI/bge-m3 (1024 dims) behind `Embedder`. Only the API process loads the model (worker calls
-  `/internal/embed`); encode via `asyncio.to_thread`, never blocking the event loop.
+- Embeddings: BAAI/bge-m3 (1024 dims) served by TEI, behind `Embedder`; API and worker call TEI over HTTP with an
+  async client. Switching to another embedding model requires re-indexing.
 - LLM: only through `app/llm/gateway.py` (adapters: Vertex AI primary, Bedrock, OpenRouter fallback);
-  `app/llm/routing.yaml` maps (tier, task) → ordered `provider:model` list. Never call an LLM SDK or HTTP API
-  directly from features.
+  `app/llm/routing.yaml` maps (tier, task) → ordered `provider:model` list. The verifier is always a different model
+  family from the generator. Never call an LLM SDK or HTTP API directly from features.
 - Observability: structlog JSON logs + Langfuse (OpenTelemetry and Sentry after the contest).
 
 ## Code conventions
