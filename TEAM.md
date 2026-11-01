@@ -20,10 +20,10 @@ was cut to 3 minutes). If (3) is "no", start a fresh repo with this same plan; (
 | Person | Lane | Owns (only edits these) | Delivers |
 |---|---|---|---|
 | **P1** (lead) | Platform, infra, integration (2 agents: infra + integration) | `apps/api/app/main.py`, `app/schemas.py`, `app/api/__init__.py`, `app/config.py`, `app/db.py`, `app/jobs/`, `app/observability/`, `supabase/migrations/`, `apps/api/tests/conftest.py`, `scripts/seed.py`, `scripts/pregenerate.py`, `docker/`, `.github/`, `pyproject.toml`/`uv.lock`, `CLAUDE.md`, `TEAM.md`, `PLAN.md`, `MAP.md`, `specs/` setup | Supabase, contracts + API stubs, `topic_jobs` queue + worker, structlog + Langfuse, Google Cloud GPU VM + AWS backup VM, Docker + named Cloudflare Tunnel + GHCR/Watchtower deploy, budget alerts, merges, pre-generated topics, end-to-end runs, demo script |
-| **P2** | Sources, research, retrieval (2 agents: research + retrieval) | `app/rag/`, `app/llm/`, `app/research/`, `app/uploads/`, `data/sources/`, `scripts/build_library.*`, `tests/rag/`, `tests/research/`, `tests/uploads/`, `data/eval/` | Allowlist, library of 8–10 open textbooks (~30k chunks, Nhanh mode), Deep Research agent, uploaded-file reader (PDF/DOCX/link), bge-m3 embeddings, cited retrieval, LLM gateway (Vertex AI → Bedrock → OpenRouter) with per-tier routing |
-| **P3** | Content generation | `app/content/`, `data/kg/`, `data/items/`, `tests/content/` | Pipeline for any subject: sources → Knowledge Graph → MCQs with a misconception per wrong option → answerability check; validators (no cycles, everything cited) |
-| **P4** | Learning flow + tutor | `app/engine/` (new files), `app/graders/`, `app/services/`, `app/tutor/`, `app/api/learn.py`, `app/api/tutor.py`, `tests/engine/`, `tests/graders/`, `tests/services/`, `tests/tutor/` | MCQ grading, **graph-walk placement**, next-item selection, root-cause remediation, Socratic tutor (Vietnamese, cited, no final answers), mastery + review persistence, exam plan |
-| **P5** | Web app | `apps/web/`, `assets/sena/` | Next.js app on Vercel: topic input + file upload, research-trail screen, knowledge map (React Flow), learning + tutor screens, Free/Pro switch, Vietnamese i18n, **backup video** |
+| **P2** | Sources, research, retrieval (2 agents: research + retrieval) | `app/rag/`, `app/llm/`, `app/research/`, `app/uploads/`, `data/sources/`, `scripts/build_library.*`, `tests/rag/`, `tests/research/`, `tests/uploads/`, `data/eval/` | Allowlist, library of 8–10 open textbooks (~30k chunks, Nhanh mode), Deep Research agent, uploaded-file reader (PDF/DOCX/link), bge-m3 embeddings, cited retrieval, optional reranker `rag/rerank.py` (decided at H8), LLM gateway (Vertex AI → Bedrock → OpenRouter) with per-tier routing |
+| **P3** | Content generation + guardrails | `app/content/`, `app/guardrails/`, `data/kg/`, `data/items/`, `data/guardrails/`, `tests/content/`, `tests/guardrails/` | Pipeline for any subject: sources → Knowledge Graph → MCQs with a misconception per wrong option; validators (no cycles, everything cited); **guardrails**: `answerability.py` (items and tutor hints must be supported by their cited chunks) and `metrics.py` (error rate on a human-labelled sample, shown on the demo dashboard) |
+| **P4** | Learning flow + tutor | `app/engine/graph.py`, `app/engine/placement.py` (and other new engine files), `app/graders/`, `app/services/`, `app/tutor/`, `app/api/learn.py`, `app/api/tutor.py`, `tests/engine/`, `tests/graders/`, `tests/services/`, `tests/tutor/` | MCQ grading, **graph-walk placement**, next-item selection, root-cause remediation, Socratic tutor (Vietnamese, cited, no final answers), mastery + review persistence, exam plan |
+| **P5** | Web app | `apps/web/`, `assets/sena/` | Next.js app on Vercel: topic input + file upload, research-trail screen, knowledge map (React Flow), learning + tutor screens, **"Vì sao?" panel** rendering `DecisionTrace`, Free/Pro switch, Vietnamese i18n, **backup video** |
 
 ## Stack (decided; changes go through P1)
 - **Web:** Next.js (App Router, TypeScript strict), Tailwind + shadcn/ui, React Flow with **`dagre` auto-layout
@@ -125,11 +125,15 @@ items:
     prompt_vi: "Oxy sinh ra trong quang hợp có nguồn gốc từ đâu?"
     difficulty: 0.4
     source: "https://openstax.org/..."
+    chunk_ids: ["7f3c…", "a91e…"]   # the generator's citations; the verifier sees only these chunks
+    status: verified                  # verified | needs_review (needs_review items are never served)
     options:
       - {label: "Từ nước (H2O)", correct: true}
       - {label: "Từ CO2", correct: false, misconception: oxygen-from-co2}
 ```
-Every wrong option has a `misconception`; every item has a `source`; items failing the answerability check are dropped.
+Every wrong option has a `misconception`; every item has a `source` and `chunk_ids`. **Verification gate** (`SPEC.md`):
+the verifier answers the item blind from its cited chunks only; a mismatch or no answer sets `needs_review`, and only
+`verified` items are served.
 
 ### API (FastAPI, JSON; Pydantic models in `app/schemas.py`). P1 ships all routes as **stubs with fixture data** by H3.
 | Method & path | Owner | Request → Response |
@@ -141,9 +145,9 @@ Every wrong option has a `misconception`; every item has a `source`; items faili
 | `GET /topics/cached` | P1 | → `{topics: [{subject_slug, name_vi}]}` |
 | `POST /uploads` | P2 | multipart PDF/DOCX or `{url}` → `{upload_id, pages, text_ok}` |
 | `GET /graph?learner_id=&subject=` | P4 | → `{nodes: [{slug, name_vi, p_known, mastered}], edges: [{from, to}]}` |
-| `POST /placement/next` | P4 | `{learner_id, subject}` → `{item \| null, done, gap_slug?}` |
+| `POST /placement/next` | P4 | `{learner_id, subject}` → `{item \| null, done, gap_slug?, trace: DecisionTrace}` |
 | `GET /next-item?learner_id=&subject=` | P4 | → `{item, reason_vi}` |
-| `POST /attempts` | P4 | `{learner_id, item_id, answer, hints_used}` → `{correct, misconception_vi?, p_known, mastered, remediation?: {concept_slug, reason_vi}}` |
+| `POST /attempts` | P4 | `{learner_id, item_id, answer, hints_used}` → `{correct, misconception_vi?, p_known, mastered, remediation?: {concept_slug, reason_vi}, traces: [DecisionTrace]}` |
 | `POST /tutor/hint` | P4 | `{learner_id, item_id, level, last_answer?, tier}` → `{hint_vi, citations: [{title, section, url}]}` |
 | `POST /ask` | P2 | `{question, subject, tier}` → `{answer_vi, citations}` |
 | `GET /reviews/due?learner_id=` | P4 | → `{cards: [{concept_slug, due_at}]}` |
@@ -159,11 +163,27 @@ Every wrong option has a `misconception`; every item has a `source`; items faili
 - `app/research/agent.py::research(goal, on_event) -> list[ChosenSource]` — allowlisted domains only,
   ≤ 15 searches, ≤ 12 page reads, 8-minute cap.
 - `app/engine/bkt.py`, `app/engine/srs.py` (exist): pure, no DB.
+- `app/engine/graph.py` (P4): prerequisite DAG helpers + `root_cause(graph, mastery, failed_slug) -> concept_slug`
+  (walk prerequisites to the weakest one). Pure, no DB.
+- `app/engine/placement.py` (P4): `next_question(graph, answers) -> slug | None` and `gap(graph, answers) -> slug`,
+  the graph-walk placement below. Pure, no DB.
+- `app/guardrails/answerability.py` (P3): `check(text, cited_chunks) -> Verdict{supported, reason}`, used on every
+  generated item before it is stored and on every tutor hint before it is shown (P4 calls it).
+- `app/guardrails/metrics.py` (P3): runs the checks over the labelled set in `data/guardrails/` and reports error rate,
+  catch rate and false alarms; the numbers go on the demo dashboard.
+- `app/rag/rerank.py` (P2, optional): rerank retrieved chunks (e.g. `bge-reranker-v2-m3`); only if H8 retrieval is weak.
 
 ### Placement (graph walk, P4)
 Start at an advanced concept. Correct → mark its prerequisites as known (raise `p_known`) and move to the next
 unknown branch. Wrong → ask about one of its prerequisites. Stop after ~6 questions or when the gap is located;
 return `gap_slug`. BKT keeps updating mastery after every later attempt.
+
+### DecisionTrace (P4 defines in `app/engine/trace.py`; P5 renders)
+`{kind, concept_slug, at, prior, evidence: {item_id?, correct?, misconception?, slip?, guess?}, posterior, rule, rule_vi,
+alternatives: [{concept_slug, p_known, why_not_vi}]}` — pure data from the engine, stored per learner (migration `0003`),
+returned by `/placement/next` and `/attempts`, shown in the web app's "Vì sao?" panel. `bkt.update` and `srs.review`
+stay unchanged; traced wrappers (`update_traced`, `review_traced`) and `graph.root_cause` / `placement.next_question`
+return `(result, trace)`.
 
 ## Two modes
 | | Nhanh (NotebookLM-style) | Nghiên cứu sâu (Deep Research) |
@@ -184,11 +204,11 @@ objectives; everything cited; answerability-checked items.
 | **H1–H3** | Contracts + API stubs, primary GPU VM (Docker + named tunnel + GHCR/Watchtower), backup VM image, tests switched to a throwaway schema per run | Index 2–3 textbooks on a temporary GPU VM; **measure bge-m3 on the API VM**; first Vertex AI call | Generate a graph from 1 sample chapter | FSRS wrapper + tests; placement design | Wire skeleton to API stubs |
 | **H3** checkpoint | Contracts frozen, foundation merged | | | | |
 | **H3–H8** | structlog + Langfuse; `topic_jobs` queue + worker + SSE with heartbeat | Retrieval + gateway + Nhanh mode; uploads | Pipeline graph → items → check | Grading, graph-walk placement, next item | Topic input + upload, map, learning screen |
-| **H8** checkpoint | Nhanh end to end on **3 unfamiliar topics**. Not solid → whole team on Nhanh + pre-generated topics; Deep Research becomes a bonus. Pick Free/Pro models from the Vietnamese test. | | | | |
+| **H8** checkpoint | Nhanh end to end on **3 unfamiliar topics**. Not solid → whole team on Nhanh + pre-generated topics; Deep Research becomes a bonus. Pick Free/Pro models from the Vietnamese test. P2 decides on the reranker from the retrieval check. | | | | |
 | **H8–H11** | Integration, dashboard | Deep Research agent, full library | Quality across subject types | Remediation + Socratic tutor | Research-trail + tutor screens, Free/Pro switch |
 | **H11–H12** | Everyone plays judge with an unfamiliar topic; measure time + cost per mode | | | | |
 | **H12** | Decide: Deep Research live on stage, or shown as a recording | | | | |
-| **H12–H18** | Pre-generate topics, demo script | Fixes, eval | Fixes per subject type | Reviews + exam plan; tutor eval ≥ 18/20 | Polish, manual E2E checklist |
+| **H12–H18** | Pre-generate topics, demo script | Fixes, eval | Fixes per subject type; label 50 items + 20 hints (team helps, ~1 h), run `guardrails/metrics.py` | Reviews + exam plan; tutor eval ≥ 18/20 | Polish, manual E2E checklist |
 | **H18** freeze | Tag `demo-v1` | | | | |
 | **H18–H23** | 3 clean runs with unseen topics; pitch timed to the research | | | | **Backup video** |
 | **H23–H24** | Buffer | | | | |
@@ -197,7 +217,7 @@ objectives; everything cited; answerability-checked items.
 - Branch per lane: `p1/platform`, `p2/sources`, `p3/content`, `p4/learning`, `p5/web`; one worktree per extra agent.
 - **Rebase at every checkpoint**: `git fetch && git rebase origin/main`, then run tests.
 - PR title `[P3] ...`; CI green; P1 merges. Stacked PRs: **retarget to `main` before deleting the base branch**.
-- Migrations reserved: `0003` P4, `0004` P3, `0005` P2 (`halfvec` + uploads), `0006` P1 (`topic_jobs`, `llm_calls`). Additive only.
+- Migrations reserved: `0003` P4 (`decision_traces`), `0004` P3 (`items.chunk_ids`, `items.status`), `0005` P2 (`halfvec` + uploads), `0006` P1 (`topic_jobs`, `llm_calls`). Additive only.
 - Dependencies via `uv add` / `pnpm add` in your own PR; on lockfile conflicts take `main`'s and re-lock.
 - **Secrets:** each person has their own Supabase dev project and keys in `.env`. Demo keys only via a password manager.
 
@@ -231,7 +251,7 @@ explanations cited; contract shapes exact; `MAP.md` updated.
 | Knowledge-map nodes overlap | `dagre`/`elkjs` auto-layout from H0; test shallow/deep and small/large graphs | P5 |
 | Deep Research slow, wrong or off-allowlist | 8-min cap → Nhanh → pre-generated topic; domain filter in code | P1, P2, P3 |
 | Judge picks a topic with no open textbook | Wikibooks/Wikipedia labelled as encyclopedia; state the limit openly | P2 |
-| Generated question wrong in front of judges | Answerability check, "Bản nháp tự động" label, rehearse many subject types | P3 |
+| Generated question wrong in front of judges | `guardrails/answerability.py` on every item and hint, measured error rate from `metrics.py`, "Bản nháp tự động" label, rehearse many subject types | P3 |
 | Cheap model returns bad JSON or weak Vietnamese | Pydantic validation + retry, fallback model list, H8 Vietnamese test | P2 |
 | Engine/UI only works for one graph shape | Test shallow/deep, small/large graphs; vary topics at every checkpoint | P4, P5 |
 | Uploaded file is scanned, table-heavy or has broken fonts | Check text on upload, ask for another file or link, page cap, rehearse with 5–10 real files | P2 |
@@ -245,4 +265,4 @@ explanations cited; contract shapes exact; `MAP.md` updated.
 3. Graph-walk placement in ~6 questions locates a gap; the map lights up. *(P4, P5)*
 4. Wrong answer → remediation to the weak prerequisite; hint asked → Socratic hint in Vietnamese with citations, no final answer. *(P4)*
 5. Correct answer → mastery rises, Sena praises understanding, a review is scheduled. *(P4, P5)*
-6. Dashboard shows time, cost and dropped questions for that topic. *(P1)*
+6. Dashboard shows time, cost and dropped questions for that topic, plus the measured guardrail error rate. *(P1, P3)*
