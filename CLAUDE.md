@@ -33,6 +33,7 @@ Rules that always apply, even without reading `TEAM.md`:
 - Never push to `main`, never force push, never read `.env`.
 - Migrations use the reserved numbers in `TEAM.md`; additive only except `0003`.
 - Feature freeze at H18: after that, bug fixes only.
+- Spec Kit before code: `/speckit-specify` → `/speckit-plan` → `/speckit-tasks`, one page each; stay on your lane branch.
 
 ## Language rules
 - All code, identifiers, comments, commit messages, and dev docs: **English**.

@@ -19,8 +19,11 @@ The plan has two versions, chosen by the answers to (2) and (3); see "Before H0 
    data from H3, P5 builds on mock JSON from H1, P2's stubs serve every route by H3.
 4. **Small PRs, CI green.** P2 merges routine PRs; contract or architecture changes need P1's approval. Nobody pushes
    to `main`.
-5. **Spec Kit, one page per spec:** spec → plan → tasks in `specs/<feature>/` before an agent writes code. Required only
-   for the engine, the LLM gateway and the content pipeline; other features use a short PR description.
+5. **Spec Kit for every lane (the examiner asked for it):** `/speckit-specify` → `/speckit-plan` → `/speckit-tasks`
+   in the folder Spec Kit creates under `specs/` before an agent writes code; one page per document. Plans follow the
+   contracts in this file (link, never copy them). The constitution (`.specify/`) is written from `CLAUDE.md`'s
+   principles and repeats "edit only your lane's paths", so `/speckit-implement` stays in the lane. Work stays on the
+   lane branch: if Spec Kit creates a feature branch, merge the spec back into the lane branch and delete it.
 6. **Integration before the checkpoint.** Pieces due at H8 are merged by **H7**; H7–H8 is the first end-to-end run.
 7. **Feature freeze at H18.** After that, only bug fixes, rehearsal and the backup video.
 
@@ -29,10 +32,10 @@ The plan has two versions, chosen by the answers to (2) and (3); see "Before H0 
 | Person | Lane | Owns (only edits these) | Delivers |
 |---|---|---|---|
 | **P1** (lead, ML/AI engineer; 2 agents: retrieval + engine) | Lead + ML core | `app/schemas.py` (contracts), `app/engine/` (`bkt.py`, `srs.py`, `graph.py`, `placement.py`, `trace.py`), `app/rag/` (`embed.py`, `retrieve.py`, `rerank.py`, `notebook.py`, `store.py`, `ingest.py`), `data/eval/`, `tests/engine/`, `tests/rag/`, `CLAUDE.md`, `TEAM.md`, `SPEC.md`, `PLAN.md`, `MAP.md` | Contracts (draft H1, frozen H3); **retrieval**: `embed.py` (TEI client + managed-API fallback), cited retrieval, optional reranker, retrieval evaluation (golden topic #1 before H8, the rest after), library indexing code (`ingest.py`; P2 runs it), `source_uri` per chunk; **learner model**: BKT/FSRS (traced), root-cause tracing, graph-walk placement, `DecisionTrace`; **evaluation design** for guardrail metrics and the H8 model test; H8/H12 decisions; the algorithm part of the pitch. **No server or Docker work.** |
-| **P2** (backend/DevOps; 2 agents: infra + services) | Platform | `apps/api/app/main.py`, `app/api/__init__.py`, `app/config.py`, `app/db.py`, `app/services/` (database layer), `app/jobs/`, `app/observability/`, `supabase/migrations/`, `apps/api/tests/conftest.py`, `scripts/seed.py`, `scripts/pregenerate.py`, `docker/`, `.github/`, `pyproject.toml`/`uv.lock`, `specs/` setup | Repo, CI, Spec Kit setup; API stubs from P1's contracts by H3; **GPU VM + AWS backup VM**, Docker, named Cloudflare Tunnel, GHCR/Watchtower deploy, budget alerts; **TEI container serving bge-m3** (and the reranker if used) on the VM (H0–H2) and the temporary indexing GPU VM; **runs the library indexing** with P1's code (H5–H7, size check per book, HNSW after load); `topic_jobs` queue + worker + SSE; structlog + Langfuse; database layer (attempts, mastery, traces, review cards); tests on a throwaway schema per run; merging green PRs; pre-generated topics |
+| **P2** (backend/DevOps; 2 agents: infra + services) | Platform | `apps/api/app/main.py`, `app/api/__init__.py`, `app/config.py`, `app/db.py`, `app/services/` (database layer), `app/jobs/`, `app/observability/`, `supabase/migrations/`, `apps/api/tests/conftest.py`, `scripts/seed.py`, `scripts/pregenerate.py`, `docker/`, `.github/`, `pyproject.toml`/`uv.lock`, `.specify/` | Repo, CI, Spec Kit setup (CLI, `specify init`, constitution); API stubs from P1's contracts by H3; **GPU VM + AWS backup VM**, Docker, named Cloudflare Tunnel, GHCR/Watchtower deploy, budget alerts; **TEI container serving bge-m3** (and the reranker if used) on the VM (H0–H2) and the temporary indexing GPU VM; **runs the library indexing** with P1's code (H5–H7, size check per book, HNSW after load); `topic_jobs` queue + worker + SSE; structlog + Langfuse; database layer (attempts, mastery, traces, review cards); tests on a throwaway schema per run; merging green PRs; pre-generated topics |
 | **P3** (backend) | Agents & integration | `app/research/`, `app/uploads/`, `app/llm/`, `app/graders/`, `app/api/learn.py`, `app/api/tutor.py`, `app/api/topics.py`, `data/sources/`, `scripts/build_library.*`, `tests/research/`, `tests/uploads/`, `tests/llm/`, `tests/graders/`, `tests/api/` | Allowlist + textbook downloader/HTML reader; **full library download H1–H5** (P2 runs the indexing); **Deep Research agent**; uploaded-file reader (PDF/DOCX/link); **LLM gateway** (Vertex AI → Bedrock → OpenRouter, Vertex by H3 and Bedrock by H5, per-tier routing, model roles incl. the cross-family verifier rule); MCQ grading; the **API routes** that connect P1's engine and retrieval, P2's database layer and P4's content/tutor to the web |
 | **P4** (careful, detail-oriented) | Content & tutor | `app/content/`, `app/guardrails/`, `app/tutor/`, `data/golden/`, `data/kg/`, `data/items/`, `data/guardrails/`, `tests/content/`, `tests/guardrails/`, `tests/tutor/` | **Golden topics first (H0–H3):** 2–3 hand-checked topics (source chunks, graph, ~15 items each) used as test data, labelled sample and demo fallback; content pipeline (sources → Knowledge Graph via **long-context extraction with chunk-ID markers** → MCQs with a misconception per wrong option); **verification gate**; `guardrails/metrics.py`; **Socratic tutor** prompts and hint ladder (Vietnamese, cited, never the final answer) |
-| **P5** (frontend/design) | Web app | `apps/web/`, `assets/sena/` | Next.js app on Vercel, built on **mock JSON from H1**: topic input + file upload, research-trail screen, knowledge map (React Flow + `dagre`), learning + tutor screens, **"Vì sao?" panel** rendering `DecisionTrace`, "open source page" on citations (`source_uri` + page), Free/Pro switch, Vietnamese i18n, **backup video** |
+| **P5** (frontend/design) | Web app | `apps/web/`, `assets/sena/` | Next.js app on Vercel, built on **mock JSON from H1**: topic input + file upload, research-trail screen, knowledge map (React Flow + `dagre`), learning + tutor screens, **"Vì sao?" panel** rendering `DecisionTrace`, "open source page" on citations (`source_uri` + page), Free/Pro switch, Vietnamese i18n, **backup video**; the agent reads designs through **MCP** (Figma MCP for the screens, shadcn MCP for components, a browser MCP to check the running app) |
 
 ## Stack (decided; changes go through P1)
 - **Web:** Next.js (App Router, TypeScript strict), Tailwind + shadcn/ui, React Flow with **`dagre` auto-layout
@@ -122,6 +125,15 @@ the backup VM stays stopped until needed.
 - P1: members added as GitHub collaborators; OpenRouter key with a spending limit (fallback only); cloud
   service-account credentials shared only through a password manager; first draft of `app/schemas.py`.
 - P4: pick the 2–3 golden topics (match the pre-generated list) and gather their source pages.
+- P1, **contract review**: share the Contracts section; each lane checks only the contracts it produces or consumes and
+  replies "OK" or lists concrete problems by a set deadline (silence is not agreement); P1 answers every objection and
+  decides. This is the draft; the H3 freeze is still the final check.
+- P2, **Spec Kit**: `uv tool install specify-cli`, `specify init` with the Claude Code integration (confirm the flag with
+  `specify init --help`), check the command names (`/speckit-…`), write the constitution from `CLAUDE.md`, and check
+  how it handles feature branches. Ask the organizers whether this setup may be committed before H0.
+- P5, **MCP**: add the Figma MCP (if designing in Figma) and shadcn MCP to Claude Code in local scope
+  (`claude mcp add --scope local …`) and test that the agent can read a frame. Tokens (e.g. the Figma personal access
+  token) stay in local config or `.env`, never in a commit or in chat.
 - P1: name **P2 as deputy lead** (decides while P1 sleeps); agree the sleep slots below with everyone.
 - **Only if pre-contest code is allowed (3):** P1 drafts `app/schemas.py` (H1 becomes a review) and migration `0003`; P2
   switches `conftest.py` to a throwaway schema and merges `0003`; **if (2) is also "yes"**, P3 downloads the library
@@ -239,7 +251,7 @@ objectives; everything cited; answerability-checked items.
 ## Timeline (H0 = kickoff)
 | Window | P1 Lead + ML core | P2 Platform | P3 Agents & integration | P4 Content & tutor | P5 Web |
 |---|---|---|---|---|---|
-| **H0–H1** | **Draft contracts** (`schemas.py`, YAML formats, `DecisionTrace`); migration `0003` (`halfvec`, `url` → `source_uri`); one-page engine spec in `specs/engine/` | **Throwaway-schema `conftest.py` first** (everyone runs tests from H1); repo, CI, FastAPI skeleton, schema on Supabase, **review and merge P1's migration `0003`**, Spec Kit setup; start the GPU VM | Allowlist + downloader/HTML reader; gateway skeleton (own folders) | **Golden topic #1** (chunks, graph, ~15 items) | Next.js skeleton, Sena assets |
+| **H0–H1** | **Draft contracts** (`schemas.py`, YAML formats, `DecisionTrace`); migration `0003` (`halfvec`, `url` → `source_uri`); one-page engine spec in `specs/engine/` | **Throwaway-schema `conftest.py` first** (everyone runs tests from H1); repo, CI, FastAPI skeleton, schema on Supabase, **review and merge P1's migration `0003`**, Spec Kit setup (if not done before H0); start the GPU VM | Allowlist + downloader/HTML reader; gateway skeleton (own folders) | **Golden topic #1** (chunks, graph, ~15 items) | Next.js skeleton, Sena assets |
 | **H1–H3** | BKT/FSRS traced wrappers, `graph.py`; retrieval on golden topic #1 | API stubs from the contracts; **TEI container serving bge-m3** (H2); tunnel, Watchtower, backup VM image | **Library download starts** (priority order, H1–H5); first Vertex AI call through the gateway; file reader | **Golden topics #2–3**; graph-generation prompt on a sample chapter | Map + "Vì sao?" panel on **mock JSON** |
 | **H3** checkpoint | Contracts frozen; golden topics 1–2 ready; engine and UI tested on real data; bge-m3 measured on the VM; migration `0003` merged; first books downloaded | | | | |
 | **H3–H7** | `placement.py`, `DecisionTrace` everywhere; retrieval evaluation on golden topic #1 only | **Library indexing** on the indexing GPU VM with P1's code (H5–H7), size check, HNSW after load; `topic_jobs` queue + worker + SSE with heartbeat; database layer; structlog + Langfuse | **Bedrock call through the gateway (by H5)**; library download done (H5); grading; real routes for topics, graph, placement, attempts, uploads; Nhanh mode wiring | Pipeline graph → items; verification gate (Bedrock verifier; OpenRouter fallback of another family) | Topic input + upload, map, learning screen; switch to real routes as they land |
@@ -281,8 +293,8 @@ P3 watches the VM and merges green PRs.
 `CLAUDE.local.md` (git-ignored) and fills in their lane, so every session knows it without reading the whole plan.
 First prompt (copy and fill in):
 > You are working on lane **P_ (name)** in `TEAM.md`. Only edit the paths that lane owns.
-> Task: **(your row in the timeline for the current window)**. Write or update `specs/<feature>/spec.md`,
-> `plan.md` and `tasks.md` first. Follow the contracts in `TEAM.md` exactly; if one seems wrong, stop and tell me.
+> Task: **(your row in the timeline for the current window)**. First run `/speckit-specify`, `/speckit-plan` and
+> `/speckit-tasks` for it (one page each). Follow the contracts in `TEAM.md` exactly; if one seems wrong, stop and tell me.
 > Use fixtures or golden topics for anything another lane owns. When done: run tests, update `MAP.md`, write a PR
 > description.
 

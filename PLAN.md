@@ -49,7 +49,8 @@ Each phase should be finished properly (tests, docs) before the next. Estimates 
 - Embeddings: BAAI/bge-m3, 1024 dims, served by a TEI container on the API VM (GPU or CPU image); bulk indexing with the same image on a temporary GPU VM.
 - LLM model roles: long-context Gemini on Vertex for graph extraction; verifier always a different model family from the generator (e.g. Claude on Bedrock); Pro tutor on Claude, confirmed at H8.
 - LLM: gateway with Vertex AI primary, Bedrock and OpenRouter fallbacks; per-tier routing (Free = cheap models, Pro = strong models).
-- Planning: GitHub Spec Kit, one page per spec, required only for the engine, gateway and content pipeline. CI: pytest + ruff required, mypy warn-only.
+- Planning: GitHub Spec Kit for every lane (examiner's request), one page per document, constitution from `CLAUDE.md`. CI: pytest + ruff required, mypy warn-only.
+- Frontend agent reads designs through MCP (Figma, shadcn, browser), configured locally per person.
 
 ## Open decisions
 - Licensing beyond the demo: Think Python text is CC BY-NC-SA 4.0 — fine for a non-commercial demo,
