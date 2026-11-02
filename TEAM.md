@@ -24,6 +24,8 @@ The plan has two versions, chosen by the answers to (2) and (3); see "Before H0 
    contracts in this file (link, never copy them). The constitution (`.specify/`) is written from `CLAUDE.md`'s
    principles and repeats "edit only your lane's paths", so `/speckit-implement` stays in the lane. Work stays on the
    lane branch: if Spec Kit creates a feature branch, merge the spec back into the lane branch and delete it.
+   **Exempt** (a short PR description is enough): bug fixes, changes under ~30 min that stay inside an existing spec,
+   and everything after the H18 freeze. A change that adds a route, a contract field or a new module is never exempt.
 6. **Integration before the checkpoint.** Pieces due at H8 are merged by **H7**; H7–H8 is the first end-to-end run.
 7. **Feature freeze at H18.** After that, only bug fixes, rehearsal and the backup video.
 

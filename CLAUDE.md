@@ -34,6 +34,8 @@ Rules that always apply, even without reading `TEAM.md`:
 - Migrations use the reserved numbers in `TEAM.md`; additive only except `0003`.
 - Feature freeze at H18: after that, bug fixes only.
 - Spec Kit before code: `/speckit-specify` → `/speckit-plan` → `/speckit-tasks`, one page each; stay on your lane branch.
+  Exempt: bug fixes, changes under ~30 min inside an existing spec, and anything after H18 (short PR description
+  instead). New routes, contract fields or modules always need a spec.
 
 ## Language rules
 - All code, identifiers, comments, commit messages, and dev docs: **English**.
