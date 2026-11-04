@@ -44,7 +44,7 @@ Each phase should be finished properly (tests, docs) before the next. Estimates 
 
 ## Decisions made
 - Demo: the judge's own topic or uploaded file; no pre-built subject. MCQ only.
-- Web: Next.js on Vercel. API: FastAPI in Docker on a Google Cloud GPU VM in Singapore (AWS backup VM, roles swappable), via a named Cloudflare Tunnel; organizer cloud credits.
+- Web: Next.js on Vercel. API: FastAPI in Docker on a Google Cloud GPU VM in Singapore (AWS backup VM, roles swappable), via a named Cloudflare Tunnel; organizer cloud credits, open at H0 (GPU or CPU decided by H1).
 - Data: Supabase (Postgres + pgvector `halfvec`, Storage), ~30k-chunk budget. Jobs: Postgres `topic_jobs` queue + worker service (Redis after the contest).
 - Embeddings: BAAI/bge-m3, 1024 dims, served by a TEI container on the API VM (GPU or CPU image); bulk indexing with the same image on a temporary GPU VM.
 - LLM model roles: long-context Gemini on Vertex for graph extraction; verifier always a different model family from the generator (e.g. Claude on Bedrock); Pro tutor on Claude, confirmed at H8.

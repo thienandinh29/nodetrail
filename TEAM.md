@@ -42,8 +42,11 @@ The plan has two versions, chosen by the answers to (2) and (3); see "Before H0 
 ## Stack (decided; changes go through P1)
 - **Web:** Next.js (App Router, TypeScript strict), Tailwind + shadcn/ui, React Flow with **`dagre` auto-layout
   from H0** (never hand-computed x/y; every topic produces a differently shaped graph); deployed on **Vercel**.
-- **Cloud (organizer credits):** **Google Cloud is primary, AWS is backup**; swap the roles if AWS approves GPU quota
-  first. Region: Singapore (`asia-southeast1` / `ap-southeast-1`), next to Supabase. Budget alerts on both accounts.
+- **Cloud (organizer credits, both open at H0):** **Google Cloud is primary, AWS is backup**; swap the roles if AWS
+  gets a GPU first. Google credits cover Compute Engine, Cloud Run, Vertex AI and other GCP services. AWS gives each
+  member's new root account up to $200 ($100 at signup + $100 from tasks); credits do not pool, so use one account for
+  Bedrock and the backup VM and keep the others in reserve. Region: Singapore (`asia-southeast1` / `ap-southeast-1`),
+  next to Supabase. Budget alerts on every account in use; root accounts get MFA and no access keys (use IAM users).
 - **API host (P2):** Python 3.12, FastAPI, Pydantic v2, `uv`, in Docker on a **GPU VM** on the primary cloud (spec below).
   The backup cloud keeps a **stopped VM with the same image and compose file**, started only if the primary fails.
   Exposed with a **named Cloudflare Tunnel on the team's own domain** (never `trycloudflare.com`: its URL changes on
@@ -118,12 +121,13 @@ Acceptance at H3: query embedding < ~1 s per Vietnamese question on the VM. Bulk
 the backup VM stays stopped until needed.
 
 ### Before H0 checklist
-- P1 + P2, **today**: request GPU quota on **both** clouds (Singapore + one nearby region; new accounts often start at
-  zero and approval can take a day or more); enable Vertex AI and Bedrock and request model access (Claude on both,
-  Gemini on Vertex); set budget alerts on both; ask the organizers for the credit amount, end date, whether GPUs and
-  model access are included, and whether a card is required.
+- P1, **ask the organizers now** (cloud opens only at H0): Is GPU quota already on the provided Google project, and which
+  GPU types and regions? Are Vertex AI and Claude/Gemini model access enabled? How much Google credit, per team or per
+  person? **When does access close** (the final demo must still run)? Does the AWS credit need a card, and does the free
+  account plan allow GPU instances and Bedrock? May we use our own cloud accounts before H0 for testing?
 - P2: Cloudflare account + a cheap domain + a named tunnel on it; Vercel account linked to the repo; Supabase demo
-  project; VM setup script tested (`docker run hello-world` works on the VM).
+  project; VM setup script written and ready to run at H0 (first real test on the VM).
+- P3: test the gateway through OpenRouter if pre-contest code is allowed; only the Vertex and Bedrock adapters wait for H0.
 - P1: members added as GitHub collaborators; OpenRouter key with a spending limit (fallback only); cloud
   service-account credentials shared only through a password manager; first draft of `app/schemas.py`.
 - P4: pick the 2–3 golden topics (match the pre-generated list) and gather their source pages.
@@ -253,7 +257,7 @@ objectives; everything cited; answerability-checked items.
 ## Timeline (H0 = kickoff)
 | Window | P1 Lead + ML core | P2 Platform | P3 Agents & integration | P4 Content & tutor | P5 Web |
 |---|---|---|---|---|---|
-| **H0–H1** | **Draft contracts** (`schemas.py`, YAML formats, `DecisionTrace`); migration `0003` (`halfvec`, `url` → `source_uri`); one-page engine spec in `specs/engine/` | **Throwaway-schema `conftest.py` first** (everyone runs tests from H1); repo, CI, FastAPI skeleton, schema on Supabase, **review and merge P1's migration `0003`**, Spec Kit setup (if not done before H0); start the GPU VM | Allowlist + downloader/HTML reader; gateway skeleton (own folders) | **Golden topic #1** (chunks, graph, ~15 items) | Next.js skeleton, Sena assets |
+| **H0–H1** | **Draft contracts** (`schemas.py`, YAML formats, `DecisionTrace`); migration `0003` (`halfvec`, `url` → `source_uri`); one-page engine spec in `specs/engine/` | **Throwaway-schema `conftest.py` first** (everyone runs tests from H1); repo, CI, FastAPI skeleton, schema on Supabase, **review and merge P1's migration `0003`**, Spec Kit setup (if not done before H0); **minute 0: check GPU quota on both clouds, request it if missing, enable Vertex AI and Bedrock, set budget alerts; decide GPU or CPU VM by H1**; start the VM | Allowlist + downloader/HTML reader; gateway skeleton (own folders) | **Golden topic #1** (chunks, graph, ~15 items) | Next.js skeleton, Sena assets |
 | **H1–H3** | BKT/FSRS traced wrappers, `graph.py`; retrieval on golden topic #1 | API stubs from the contracts; **TEI container serving bge-m3** (H2); tunnel, Watchtower, backup VM image | **Library download starts** (priority order, H1–H5); first Vertex AI call through the gateway; file reader | **Golden topics #2–3**; graph-generation prompt on a sample chapter | Map + "Vì sao?" panel on **mock JSON** |
 | **H3** checkpoint | Contracts frozen; golden topics 1–2 ready; engine and UI tested on real data; bge-m3 measured on the VM; migration `0003` merged; first books downloaded | | | | |
 | **H3–H7** | `placement.py`, `DecisionTrace` everywhere; retrieval evaluation on golden topic #1 only | **Library indexing** on the indexing GPU VM with P1's code (H5–H7), size check, HNSW after load; `topic_jobs` queue + worker + SSE with heartbeat; database layer; structlog + Langfuse | **Bedrock call through the gateway (by H5)**; library download done (H5); grading; real routes for topics, graph, placement, attempts, uploads; Nhanh mode wiring | Pipeline graph → items; verification gate (Bedrock verifier; OpenRouter fallback of another family) | Topic input + upload, map, learning screen; switch to real routes as they land |
@@ -312,7 +316,8 @@ explanations cited; contract shapes exact; `MAP.md` updated.
 | Contracts late past H1 / foundation late past H3 | Lanes keep working on golden topics, mock JSON and their own folders; P1 does nothing but contracts in H0–H1 | P1, P2 |
 | Tunnel URL changes or SSE stream drops mid-research | Named tunnel on own domain; heartbeat every 15–20 s; web reconnects and reloads `GET /topics/{id}` | P2, P5 |
 | Primary VM down | Start the backup VM on the other cloud (same image + compose + tunnel token); `/health` check; Render/Railway last resort | P2 |
-| GPU quota not approved before H0 | CPU VM (8 vCPU / 32 GB) with the TEI CPU image; swap primary cloud if the other approves first | P2, P1 |
+| No GPU quota by H1 (cloud opens only at H0) | CPU VM (8 vCPU / 32 GB) with the TEI CPU image; swap primary cloud if the other approves first; bulk indexing on Colab writing to Supabase (same bge-m3 model, no re-index) | P2, P1 |
+| Cloud access closes before the final demo | Confirm the closing time with the organizers; if it closes first, keep a recording and move the API to a surviving account before H23 | P1, P2 |
 | Cloud credits burn (GPU VM left running) | Budget alerts on both clouds; delete the indexing VM right after use; backup VM stays stopped | P2 |
 | Vertex model access missing or rate-limited | Gateway falls through to Bedrock, then OpenRouter (`routing.yaml` order) | P3 |
 | bge-m3 too slow, or TEI / GPU driver fails | TEI CPU image → HF hosted bge-m3 → managed multilingual embedding API on Bedrock/Vertex (**requires re-indexing**) | P1, P2 |
