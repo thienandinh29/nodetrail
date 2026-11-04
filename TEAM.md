@@ -43,7 +43,12 @@ The plan has two versions, chosen by the answers to (2) and (3); see "Before H0 
 - **Web:** Next.js (App Router, TypeScript strict), Tailwind + shadcn/ui, React Flow with **`dagre` auto-layout
   from H0** (never hand-computed x/y; every topic produces a differently shaped graph); deployed on **Vercel**.
 - **Cloud (organizer credits, both open at H0):** **Google Cloud is primary, AWS is backup**; swap the roles if AWS
-  gets a GPU first. Google credits cover Compute Engine, Cloud Run, Vertex AI and other GCP services. AWS gives each
+  gets a GPU first. Google credits cover Cloud Run, Vertex AI and other GCP services (amount and GPU access not yet
+  confirmed), on each member's **own Google account**. **P2 owns the product project** on P2's credit; P1 and P3 join it
+  with their own logins, passwords are never shared, and other members' credits stay in reserve. The VM and worker use a
+  service account, never a personal login; its key goes only in `.env` or the password manager. Do not sign the product
+  project in to Antigravity (it spends the same credit). Avoid a personal card on the billing account: budget alerts
+  warn but do not stop spending. AWS gives each
   member's new root account up to $200 ($100 at signup + $100 from tasks); credits do not pool, so use one account for
   Bedrock and the backup VM and keep the others in reserve. Region: Singapore (`asia-southeast1` / `ap-southeast-1`),
   next to Supabase. Budget alerts on every account in use; root accounts get MFA and no access keys (use IAM users).
@@ -121,10 +126,10 @@ Acceptance at H3: query embedding < ~1 s per Vietnamese question on the VM. Bulk
 the backup VM stays stopped until needed.
 
 ### Before H0 checklist
-- P1, **ask the organizers now** (cloud opens only at H0): Is GPU quota already on the provided Google project, and which
-  GPU types and regions? Are Vertex AI and Claude/Gemini model access enabled? How much Google credit, per team or per
-  person? **When does access close** (the final demo must still run)? Does the AWS credit need a card, and does the free
-  account plan allow GPU instances and Bedrock? May we use our own cloud accounts before H0 for testing?
+- P1, **ask the organizers now** (cloud opens only at H0; own Google accounts confirmed): **How much credit per member**
+  (the guide mentions $5; about $5 means the VM moves to AWS and Google keeps Vertex only)? Can it use GPUs on Compute
+  Engine, and with what quota? **When does the credit expire or access close** (the final demo must still run)? Does the
+  AWS credit need a card, and does the free account plan allow GPU instances and Bedrock?
 - P2: Cloudflare account + a cheap domain + a named tunnel on it; Vercel account linked to the repo; Supabase demo
   project; VM setup script written and ready to run at H0 (first real test on the VM).
 - P3: test the gateway through OpenRouter if pre-contest code is allowed; only the Vertex and Bedrock adapters wait for H0.
