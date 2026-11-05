@@ -1,7 +1,5 @@
 @MAP.md
 @SPEC.md
-@PLAN.md
-@TEAM.md
 
 # NodeTrail
 
@@ -21,6 +19,23 @@ Full brief: `context/product-brief.vi.md`.
 - **Ask before** committing, pushing, adding dependencies, or making architectural changes.
 - **Run tests/lint before saying anything is done** (see `/verify` skill). Report failures honestly with output.
   The owner re-checks everything afterwards.
+
+## Team plan (read on demand, not auto-loaded)
+`TEAM.md` is the single source of truth for the contest plan; `PLAN.md` only summarizes it. They are not loaded into
+every session to save context. Your lane is set in your git-ignored `CLAUDE.local.md` (copy
+`CLAUDE.local.md.example`). Before a task, read from `TEAM.md`:
+- your row in **Lanes** (the paths you may edit) and your column in **Timeline** for the current window;
+- the **Contracts** subsection for any shape you produce or consume (copy shapes exactly, never from memory);
+- **Git workflow** before touching migrations, dependencies or branches.
+
+Rules that always apply, even without reading `TEAM.md`:
+- Edit only your lane's paths; never change a contract (only P1, announced at a checkpoint); contracts freeze at H3.
+- Never push to `main`, never force push, never read `.env`.
+- Migrations use the reserved numbers in `TEAM.md`; additive only except `0003`.
+- Feature freeze at H18: after that, bug fixes only.
+- Spec Kit before code: `/speckit-specify` → `/speckit-plan` → `/speckit-tasks`, one page each; stay on your lane branch.
+  Exempt: bug fixes, changes under ~30 min inside an existing spec, and anything after H18 (short PR description
+  instead). New routes, contract fields or modules always need a spec.
 
 ## Language rules
 - All code, identifiers, comments, commit messages, and dev docs: **English**.
