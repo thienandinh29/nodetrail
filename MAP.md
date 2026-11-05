@@ -6,10 +6,11 @@ Planned entries are marked _(planned)_ until they exist.
 | Path | Purpose |
 |---|---|
 | `CLAUDE.md` | Rules and working agreement for Claude (auto-loaded; imports only `MAP.md` and `SPEC.md`) |
-| `CLAUDE.local.md.example` | Per-person lane template; copy to git-ignored `CLAUDE.local.md` |
+| `CLAUDE.local.md.example` | One-line lane selector; copy to git-ignored `CLAUDE.local.md` |
 | `SPEC.md` | What NodeTrail must do: features, behaviors, non-goals |
 | `PLAN.md` | Phased build plan and current status |
 | `TEAM.md` | 24-hour team plan: lanes, owned paths, stack, contracts, timeline, git workflow, risks |
+| `team/` | Start guide per lane (`P1.md`–`P5.md`): setup, first task, first prompt; `TEAM.md` wins if they differ |
 | `specs/` _(planned)_ | GitHub Spec Kit: one folder per feature (spec, plan, tasks) |
 | `.specify/` _(planned, P2)_ | Spec Kit project memory: constitution (from `CLAUDE.md` principles), templates |
 | `docker/` _(planned, P2)_ | API image, compose for the cloud VM (API + worker + TEI for bge-m3, Watchtower, named Cloudflare Tunnel), VM setup script |
