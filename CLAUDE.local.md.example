@@ -1,9 +1,2 @@
-# My lane (copy to CLAUDE.local.md, which is git-ignored, and fill in)
-
-I am lane **P_ (name)** in `TEAM.md`.
-- Paths I own: (copy your "Owns" cell from the Lanes table)
-- Current window: (e.g. H3–H7) — read my column in the Timeline table of `TEAM.md`.
-- Contracts I produce: (e.g. Items) — read that Contracts subsection before writing them.
-- Contracts I consume: (e.g. Knowledge Graph, DecisionTrace) — use fixtures or golden topics until integration.
-
-Update "Current window" at every checkpoint (H1, H3, H5, H7, H8, H12, H18, H23).
+# Copy to CLAUDE.local.md (git-ignored) and change the number to your lane.
+@team/P1.md

@@ -23,7 +23,7 @@ Full brief: `context/product-brief.vi.md`.
 ## Team plan (read on demand, not auto-loaded)
 `TEAM.md` is the single source of truth for the contest plan; `PLAN.md` only summarizes it. They are not loaded into
 every session to save context. Your lane is set in your git-ignored `CLAUDE.local.md` (copy
-`CLAUDE.local.md.example`). Before a task, read from `TEAM.md`:
+`CLAUDE.local.md.example`), which loads your start guide from `team/`. Before a task, read from `TEAM.md`:
 - your row in **Lanes** (the paths you may edit) and your column in **Timeline** for the current window;
 - the **Contracts** subsection for any shape you produce or consume (copy shapes exactly, never from memory);
 - **Git workflow** before touching migrations, dependencies or branches.
